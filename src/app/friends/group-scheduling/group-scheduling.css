@@ -1,0 +1,429 @@
+/* =========================================================================
+   GROUP SCHEDULING PAGE STYLES
+   ========================================================================= */
+
+.scheduling-loading-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 5rem 0; /* py-20 */
+}
+
+.scheduling-loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  color: #4f46e5;
+}
+
+.scheduling-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem; /* gap-8 */
+}
+
+@media (min-width: 1024px) {
+  .scheduling-grid-layout {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.scheduling-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* space-y-6 */
+}
+
+@media (min-width: 1024px) {
+  .scheduling-left-col {
+    grid-column: span 1 / span 1;
+  }
+}
+
+.scheduling-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* space-y-6 */
+}
+
+@media (min-width: 1024px) {
+  .scheduling-right-col {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* Form Styling */
+.scheduling-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem; /* space-y-1.5 */
+}
+
+.scheduling-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b; /* text-slate-500 */
+}
+
+.scheduling-label.flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scheduling-count {
+  color: #4f46e5;
+  font-weight: 800;
+}
+
+.scheduling-textarea {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5e1;
+  outline: none;
+  font-weight: 600;
+  transition: border-color 0.2s ease;
+}
+
+.scheduling-textarea:focus {
+  border-color: #4f46e5;
+}
+
+/* Members Selection Box */
+.scheduling-members-list {
+  max-height: 15rem; /* max-h-60 */
+  overflow-y: auto;
+  border: 1px solid #f1f5f9;
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0.25rem;
+  background-color: #f8fafc;
+}
+
+.scheduling-member-item {
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  color: #475569;
+}
+
+.scheduling-member-item:hover {
+  background-color: #f1f5f9;
+}
+
+.scheduling-member-item.selected {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+.scheduling-member-info {
+  min-width: 0;
+}
+
+.scheduling-member-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.scheduling-member-email {
+  font-size: 0.625rem;
+  opacity: 0.75;
+  margin: 0;
+  margin-top: 0.125rem;
+}
+
+.scheduling-check-badge {
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: #4f46e5;
+  color: #ffffff;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Checkbox Buffer Option */
+.scheduling-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  user-select: none;
+}
+
+.scheduling-checkbox {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  border-color: #cbd5e1;
+  color: #4f46e5;
+  cursor: pointer;
+}
+
+.scheduling-checkbox-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+}
+
+.scheduling-action-btn {
+  width: 100%;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  padding: 0.625rem 0;
+  margin-top: 0.5rem;
+}
+
+/* Invitations card */
+.scheduling-invitations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* space-y-3 */
+  max-height: 20rem; /* max-h-80 */
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.scheduling-invitation-card {
+  padding: 0.75rem;
+  border: 1px solid #f1f5f9;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+
+.scheduling-invitation-card:hover {
+  border-color: #a5b4fc;
+  background-color: rgba(224, 231, 255, 0.1);
+}
+
+.scheduling-invitation-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scheduling-invitation-host {
+  font-size: 0.625rem;
+  color: #94a3b8;
+  margin: 0;
+  margin-top: 0.25rem;
+}
+
+.scheduling-host-name {
+  font-weight: 800;
+  color: #4f46e5;
+}
+
+.scheduling-invitation-duration {
+  font-size: 0.5625rem;
+  color: #cbd5e1;
+  margin: 0;
+  margin-top: 0.125rem;
+}
+
+/* Status Loading Card */
+.scheduling-status-box {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 3rem;
+  border-radius: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  gap: 1rem;
+}
+
+.scheduling-status-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #4f46e5;
+}
+
+.scheduling-status-title {
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0;
+}
+
+.scheduling-status-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Summary Card */
+.scheduling-summary-card {
+  background-color: #f8fafc;
+  border: 1px solid #f1f5f9;
+  padding: 1rem;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.scheduling-summary-title {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.scheduling-summary-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin: 0;
+  margin-top: 0.25rem;
+}
+
+.scheduling-summary-badge {
+  padding: 0.375rem 0.875rem;
+  background-color: #e0e7ff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* Options */
+.scheduling-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.scheduling-option-card {
+  padding: 1rem;
+  border: 1px solid #f1f5f9;
+  border-radius: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+
+.scheduling-option-card:hover {
+  border-color: #cbd5e1;
+}
+
+.scheduling-option-card.checked {
+  border-color: #4f46e5;
+  background-color: rgba(224, 231, 255, 0.1);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.scheduling-option-badge-num {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.scheduling-option-badge-num.checked {
+  background-color: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
+}
+
+.scheduling-option-label {
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0;
+}
+
+.scheduling-option-time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin: 0;
+  margin-top: 0.125rem;
+}
+
+.scheduling-option-match {
+  padding: 0.25rem 0.625rem;
+  background-color: #ecfdf5;
+  color: #059669;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 0.5rem;
+  user-select: none;
+}
+
+/* Intro Box */
+.scheduling-intro-box {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 4rem 1.5rem;
+  border-radius: 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.scheduling-intro-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #cbd5e1;
+  margin-bottom: 0.75rem;
+}
+
+.scheduling-intro-title {
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0;
+}
+
+.scheduling-intro-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin: 0;
+  margin-top: 0.25rem;
+  max-width: 24rem;
+}

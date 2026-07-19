@@ -1,0 +1,454 @@
+/* =========================================================================
+   VOTE ROOM PAGE STYLES
+   ========================================================================= */
+
+.vote-loading-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 5rem 0; /* py-20 */
+}
+
+.vote-loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  color: #4f46e5;
+}
+
+.vote-empty-box {
+  text-align: center;
+  padding: 5rem 0;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.5rem;
+}
+
+.vote-empty-text {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 700;
+  margin: 0;
+}
+
+.vote-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem; /* gap-8 */
+}
+
+@media (min-width: 1024px) {
+  .vote-grid-layout {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.vote-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* space-y-6 */
+}
+
+@media (min-width: 1024px) {
+  .vote-left-col {
+    grid-column: span 2 / span 2;
+  }
+}
+
+.vote-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* space-y-6 */
+}
+
+@media (min-width: 1024px) {
+  .vote-right-col {
+    grid-column: span 1 / span 1;
+  }
+}
+
+/* Summary Card */
+.vote-summary-card {
+  padding: 1rem;
+  background-color: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 1rem;
+}
+
+.vote-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+}
+
+.vote-summary-info {
+  min-width: 0;
+}
+
+.vote-summary-title {
+  font-size: 0.875rem;
+  font-weight: 850;
+  color: #1e293b;
+  margin: 0;
+}
+
+.vote-summary-host {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin: 0;
+  margin-top: 0.25rem;
+}
+
+.vote-host-highlight {
+  color: #4f46e5;
+  font-weight: 900;
+}
+
+.vote-summary-duration {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin: 0;
+  margin-top: 0.125rem;
+}
+
+.vote-summary-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.vote-status-badge {
+  padding: 0.25rem 0.625rem;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 0.5rem;
+  user-select: none;
+}
+
+.vote-status-badge.confirmed {
+  background-color: #ecfdf5;
+  color: #059669;
+  border: 1px solid #d1fae5;
+}
+
+.vote-status-badge.pending {
+  background-color: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #ffedd5;
+}
+
+.vote-copy-btn {
+  font-size: 10px;
+  padding: 0.25rem 0.625rem;
+  font-weight: 700;
+  border: 1px solid #c7d2fe;
+  color: #4f46e5;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.vote-copy-btn:hover {
+  background-color: #eff6ff;
+}
+
+/* Options */
+.vote-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem; /* space-y-3.5 */
+}
+
+.vote-option-card {
+  padding: 1rem;
+  border: 1px solid #f1f5f9;
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+
+@media (min-width: 640px) {
+  .vote-option-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.vote-option-card.checked {
+  border-color: #4f46e5;
+  background-color: rgba(224, 231, 255, 0.1);
+}
+
+.vote-option-card.confirmed {
+  border-color: #10b981;
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.vote-option-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.vote-option-check {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.vote-option-check.checked {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+  color: #ffffff;
+}
+
+.vote-option-title {
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0;
+}
+
+.vote-option-time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin: 0;
+  margin-top: 0.125rem;
+}
+
+.vote-option-right {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 639px) {
+  .vote-option-right {
+    align-self: flex-end;
+  }
+}
+
+.vote-score-badge {
+  padding: 0.25rem 0.625rem;
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 0.5rem;
+}
+
+.vote-finalize-btn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #10b981;
+  color: #10b981;
+  background-color: transparent;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.vote-finalize-btn:hover {
+  background-color: #ecfdf5;
+}
+
+/* Actions Row */
+.vote-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.vote-primary-btn {
+  flex: 1 1 0%;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  padding: 0.625rem 0;
+}
+
+.vote-decline-btn {
+  padding: 0.625rem 1rem;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vote-decline-btn:hover {
+  background-color: #fef2f2;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+.vote-confirmed-banner {
+  padding: 0.875rem;
+  background-color: #ecfdf5;
+  border: 1px solid #d1fae5;
+  color: #065f46;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Participants list styles */
+.vote-participant-row {
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.vote-participant-badge {
+  padding: 0.125rem 0.5rem;
+  font-size: 9px;
+  font-weight: 800;
+  border-radius: 0.25rem;
+  flex-shrink: 0;
+}
+
+.vote-participant-badge.host {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+.vote-participant-badge.voted {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.vote-participant-badge.declined {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.vote-participant-badge.waiting {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+/* Modals styling */
+.vote-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.vote-modal-card {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 28rem; /* max-w-md */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid #f1f5f9;
+  margin: 0 1rem;
+}
+
+.vote-modal-title {
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0 0 0.25rem 0;
+}
+
+.vote-modal-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.vote-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.vote-modal-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.vote-modal-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.vote-modal-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5e1;
+  outline: none;
+  font-weight: 600;
+  transition: border-color 0.2s ease;
+}
+
+.vote-modal-input:focus {
+  border-color: #4f46e5;
+}
+
+.vote-modal-textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5e1;
+  outline: none;
+  font-weight: 600;
+  transition: border-color 0.2s ease;
+}
+
+.vote-modal-textarea:focus {
+  border-color: #4f46e5;
+}
+
+.vote-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  margin-top: 1.5rem;
+}

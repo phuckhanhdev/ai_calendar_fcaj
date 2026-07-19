@@ -1,0 +1,48 @@
+{
+  "name": "ai_calendar",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "migrate": "node src/database/migrate.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.500.0",
+    "@fullcalendar/core": "^6.1.21",
+    "@fullcalendar/daygrid": "^6.1.21",
+    "@fullcalendar/interaction": "^6.1.21",
+    "@fullcalendar/react": "^6.1.21",
+    "@fullcalendar/timegrid": "^6.1.21",
+    "@google/generative-ai": "^0.24.1",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^26.1.0",
+    "@types/nodemailer": "^6.4.14",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "google-auth-library": "^10.6.2",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^1.24.0",
+    "mysql2": "^3.9.7",
+    "next": "^16.2.10",
+    "nodemailer": "^6.9.7",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-spinners": "^0.13.8",
+    "react-toastify": "^10.0.5",
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.2",
+    "autoprefixer": "^10.5.2",
+    "postcss": "^8.5.16",
+    "tailwindcss": "^4.3.2"
+  }
+}

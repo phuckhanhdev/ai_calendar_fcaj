@@ -1,0 +1,26 @@
+/* ============================================
+   SIGN IN PAGE
+   ============================================ */
+
+.signin-forgot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+}
+
+.signin-forgot .auth-link {
+  font-size: 13px;
+}
+
+.google-signin-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.google-loading-note {
+  font-size: 13px;
+  color: #666;
+  text-align: center;
+  margin-top: 6px;
+}
