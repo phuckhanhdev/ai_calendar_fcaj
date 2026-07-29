@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   try {
     const data = await req.json();
-    const { User_ID, Phone_Number, FName, LName, Date_of_birth } = data;
+    const { User_ID, Phone_Number, FName, LName, Date_of_birth, Avatar_Url } = data;
 
     if (!User_ID) {
       return NextResponse.json({ error: "Missing User_ID" }, { status: 400 });
@@ -21,7 +21,8 @@ export async function POST(req) {
       FName,
       LName,
       Phone_Number,
-      Date_of_birth
+      Date_of_birth,
+      Avatar_Url
     });
 
     return NextResponse.json({ message: "success" });
@@ -62,7 +63,7 @@ export async function GET(req) {
 export async function PUT(req) {
   try {
     const data = await req.json();
-    const { User_ID, Phone_Number, FName, LName, Date_of_birth } = data;
+    const { User_ID, Phone_Number, FName, LName, Date_of_birth, Avatar_Url } = data;
 
     if (!User_ID) {
       return NextResponse.json({ error: "Missing User_ID" }, { status: 400 });
@@ -72,7 +73,8 @@ export async function PUT(req) {
       FName,
       LName,
       Phone_Number,
-      Date_of_birth
+      Date_of_birth,
+      Avatar_Url
     });
 
     return NextResponse.json({ message: "success" });

@@ -5,7 +5,7 @@ import "./homepage.css";
 
 export const metadata: Metadata = {
     title: "AI Destiny Calendar",
-    description: "Lịch số học thông minh tích hợp AWS Bedrock",
+    description: "Lịch số học thông minh",
 };
 
 export default function RootLayout({

@@ -30,7 +30,9 @@ export async function getEventsByUser(userId, fromDate = null) {
       Color AS color,
       Category AS category,
       Priority AS priority,
-      Reminder_Minutes AS reminder
+      Reminder_Minutes AS reminder,
+      Attachment_URL AS attachmentUrl,
+      Attachment_Name AS attachmentName
     FROM \`EVENT\`
     WHERE User_ID = ?
   `;
@@ -80,7 +82,7 @@ function formatMySQLDateTime(dateStr) {
  * Tạo sự kiện mới
  */
 export async function createEvent(userId, eventData) {
-  const { title, description, location, start, end, color, category, priority, reminder, isPrivate } = eventData;
+  const { title, description, location, start, end, color, category, priority, reminder, isPrivate, attachmentUrl, attachmentName } = eventData;
   const eventId = crypto.randomUUID();
   
   // Chuẩn hóa thời gian sang dạng MySQL DATETIME
@@ -90,8 +92,9 @@ export async function createEvent(userId, eventData) {
   const sql = `
     INSERT INTO \`EVENT\` (
       Event_ID, User_ID, Title, Description, Location, 
-      Start_Time, End_Time, Color, Category, Priority, Reminder_Minutes, Is_Private
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      Start_Time, End_Time, Color, Category, Priority, Reminder_Minutes, Is_Private,
+      Attachment_URL, Attachment_Name
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   await runQuery(sql, [
@@ -106,7 +109,9 @@ export async function createEvent(userId, eventData) {
     category || "general",
     priority || "medium",
     reminder !== undefined ? parseInt(reminder) : 30,
-    isPrivate ? 1 : 0
+    isPrivate ? 1 : 0,
+    attachmentUrl || null,
+    attachmentName || null
   ]);
 
   return {
@@ -120,7 +125,9 @@ export async function createEvent(userId, eventData) {
     category: category || "general",
     priority: priority || "medium",
     reminder: reminder !== undefined ? parseInt(reminder) : 30,
-    isPrivate: !!isPrivate
+    isPrivate: !!isPrivate,
+    attachmentUrl: attachmentUrl || null,
+    attachmentName: attachmentName || null
   };
 }
 
@@ -128,7 +135,7 @@ export async function createEvent(userId, eventData) {
  * Cập nhật sự kiện có sẵn
  */
 export async function updateEvent(eventId, userId, eventData) {
-  const { title, description, location, start, end, color, category, priority, reminder, isPrivate } = eventData;
+  const { title, description, location, start, end, color, category, priority, reminder, isPrivate, attachmentUrl, attachmentName } = eventData;
   
   // Chuẩn hóa thời gian sang dạng MySQL DATETIME
   const formattedStart = formatMySQLDateTime(start);
@@ -146,7 +153,9 @@ export async function updateEvent(eventId, userId, eventData) {
       Category = ?,
       Priority = ?,
       Reminder_Minutes = ?,
-      Is_Private = ?
+      Is_Private = ?,
+      Attachment_URL = ?,
+      Attachment_Name = ?
     WHERE Event_ID = ? AND User_ID = ?
   `;
 
@@ -161,6 +170,8 @@ export async function updateEvent(eventId, userId, eventData) {
     priority || "medium",
     reminder !== undefined ? parseInt(reminder) : 30,
     isPrivate ? 1 : 0,
+    attachmentUrl || null,
+    attachmentName || null,
     eventId,
     userId
   ]);

@@ -7,6 +7,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { toast } from "react-toastify";
 import { formatUserName } from "@/lib/name-utils";
+import { ClipLoader } from "react-spinners";
 import "./calendar-view.css";
 
 interface EventItem {
@@ -17,6 +18,8 @@ interface EventItem {
   location?: string;
   description?: string;
   color?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
 }
 
 export default function CalendarView({ user }: { user: any }) {
@@ -56,6 +59,7 @@ export default function CalendarView({ user }: { user: any }) {
   
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   
   // State Form nhập liệu
   const [eventForm, setEventForm] = useState<EventItem>({
@@ -65,7 +69,9 @@ export default function CalendarView({ user }: { user: any }) {
     end: "",
     location: "",
     description: "",
-    color: "#6366f1"
+    color: "#6366f1",
+    attachmentUrl: "",
+    attachmentName: ""
   });
 
   // State lời khuyên AI
@@ -96,7 +102,9 @@ export default function CalendarView({ user }: { user: any }) {
       end: endFormatted,
       location: "",
       description: "",
-      color: "#6366f1"
+      color: "#6366f1",
+      attachmentUrl: "",
+      attachmentName: ""
     });
     setModalMode("create");
     setIsModalOpen(true);
@@ -112,7 +120,9 @@ export default function CalendarView({ user }: { user: any }) {
       end: event.endStr || event.end?.toISOString() || event.startStr || "",
       location: event.extendedProps.location || "",
       description: event.extendedProps.description || "",
-      color: event.extendedProps.color || event.backgroundColor || "#6366f1"
+      color: event.extendedProps.color || event.backgroundColor || "#6366f1",
+      attachmentUrl: event.extendedProps.attachmentUrl || "",
+      attachmentName: event.extendedProps.attachmentName || ""
     };
 
     setSelectedEvent(mappedEvent);
@@ -135,7 +145,9 @@ export default function CalendarView({ user }: { user: any }) {
             end: eventForm.end,
             location: eventForm.location,
             description: eventForm.description,
-            color: eventForm.color
+            color: eventForm.color,
+            attachmentUrl: eventForm.attachmentUrl,
+            attachmentName: eventForm.attachmentName
           })
         });
 
@@ -157,7 +169,9 @@ export default function CalendarView({ user }: { user: any }) {
             end: eventForm.end,
             location: eventForm.location,
             description: eventForm.description,
-            color: eventForm.color
+            color: eventForm.color,
+            attachmentUrl: eventForm.attachmentUrl,
+            attachmentName: eventForm.attachmentName
           })
         });
 
@@ -170,7 +184,9 @@ export default function CalendarView({ user }: { user: any }) {
             end: eventForm.end,
             location: eventForm.location,
             description: eventForm.description,
-            color: eventForm.color
+            color: eventForm.color,
+            attachmentUrl: eventForm.attachmentUrl,
+            attachmentName: eventForm.attachmentName
           } : ev));
           toast.success("Cập nhật sự kiện thành công!");
         } else {
@@ -195,7 +211,9 @@ export default function CalendarView({ user }: { user: any }) {
       end: formatForDateTimeInput(selectedEvent.end),
       location: selectedEvent.location || "",
       description: selectedEvent.description || "",
-      color: selectedEvent.color || "#6366f1"
+      color: selectedEvent.color || "#6366f1",
+      attachmentUrl: selectedEvent.attachmentUrl || "",
+      attachmentName: selectedEvent.attachmentName || ""
     });
     setModalMode("edit");
     setIsDetailOpen(false);
@@ -292,6 +310,52 @@ export default function CalendarView({ user }: { user: any }) {
       setAiAdvice("Không thể kết nối đến máy chủ AI.");
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAttachment(true);
+    try {
+      const res = await fetch("/api/upload/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          folder: "attachments",
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Không lấy được presigned URL");
+      }
+
+      const { uploadUrl, publicUrl } = await res.json();
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Không thể upload file lên S3");
+      }
+
+      setEventForm(prev => ({
+        ...prev,
+        attachmentUrl: publicUrl,
+        attachmentName: file.name
+      }));
+      toast.success("Tải tệp đính kèm lên thành công!");
+    } catch (err: any) {
+      console.error("Attachment upload error:", err);
+      toast.error(err.message || "Lỗi tải tệp đính kèm");
+    } finally {
+      setUploadingAttachment(false);
     }
   };
 
@@ -402,6 +466,25 @@ export default function CalendarView({ user }: { user: any }) {
                   onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
                   className="modal-textarea"
                 />
+              </div>
+
+              <div className="modal-form-group">
+                <label>Tệp đính kèm (Lưu trữ S3)</label>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <input
+                    type="file"
+                    onChange={handleAttachmentUpload}
+                    disabled={uploadingAttachment}
+                    className="modal-input"
+                    style={{ flex: 1 }}
+                  />
+                  {uploadingAttachment && <ClipLoader color="#F47521" size={16} />}
+                </div>
+                {eventForm.attachmentName && (
+                  <p style={{ fontSize: "12px", color: "#10b981", margin: "4px 0 0 0" }}>
+                    ✓ Đã đính kèm: <b>{eventForm.attachmentName}</b>
+                  </p>
+                )}
               </div>
 
               <div className="modal-form-group">
@@ -520,6 +603,21 @@ export default function CalendarView({ user }: { user: any }) {
                   {selectedEvent.description || "Không có mô tả chi tiết."}
                 </p>
               </div>
+
+              {/* Tệp đính kèm */}
+              {selectedEvent.attachmentUrl && (
+                <div className="detail-desc-box" style={{ marginTop: "12px", borderLeft: "4px solid #10b981" }}>
+                  <p className="detail-desc-title" style={{ color: "#10b981" }}>📎 Tệp đính kèm (AWS S3)</p>
+                  <a 
+                    href={selectedEvent.attachmentUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ fontSize: "14px", color: "#6366f1", fontWeight: "600", textDecoration: "underline", display: "inline-block", marginTop: "4px" }}
+                  >
+                    {selectedEvent.attachmentName || "Tải xuống tệp đính kèm"}
+                  </a>
+                </div>
+              )}
 
               {/* Khu vực Gọi AI Tử Vi */}
               <div className="ai-advice-section">

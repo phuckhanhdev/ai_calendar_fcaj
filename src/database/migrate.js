@@ -55,6 +55,16 @@ async function migrate() {
       console.log("ℹ️ 'Role' column already exists in 'USER' table.");
     }
 
+    // Check and add 'Avatar_URL' column in 'USER' table
+    const hasAvatarColumn = columns.some((col) => col.Field === "Avatar_URL");
+    if (!hasAvatarColumn) {
+      console.log("➡️ Adding 'Avatar_URL' column to 'USER' table...");
+      await runQuery(db, "ALTER TABLE `USER` ADD COLUMN `Avatar_URL` VARCHAR(500) NULL");
+      console.log("✅ 'Avatar_URL' column added successfully.");
+    } else {
+      console.log("ℹ️ 'Avatar_URL' column already exists in 'USER' table.");
+    }
+
     // 4. Create 'SYSTEM_SETTING' table
     console.log("➡️ Creating 'SYSTEM_SETTING' table...");
     await runQuery(db, `
@@ -63,7 +73,7 @@ async function migrate() {
         Setting_Value TEXT NOT NULL,
         Updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
-    `);
+     `);
     console.log("✅ 'SYSTEM_SETTING' table ready.");
 
     // 5. Seed default banking settings
@@ -109,7 +119,7 @@ async function migrate() {
       console.warn("⚠️ Could not run FRIENDSHIP column check/alter (table might not exist yet):", friendshipErr.message);
     }
 
-    // Check and add Is_Private column to EVENT table if it doesn't exist
+    // Check and add Is_Private, Attachment_URL, Attachment_Name columns to EVENT table
     try {
       const eventCols = await runQuery(db, "DESCRIBE `EVENT`");
       const hasIsPrivate = eventCols.some((col) => col.Field === "Is_Private");
@@ -119,6 +129,20 @@ async function migrate() {
         console.log("✅ 'Is_Private' column added successfully.");
       } else {
         console.log("ℹ️ 'Is_Private' column already exists in 'EVENT' table.");
+      }
+
+      const hasAttachmentUrl = eventCols.some((col) => col.Field === "Attachment_URL");
+      if (!hasAttachmentUrl) {
+        console.log("➡️ Adding 'Attachment_URL' column to 'EVENT' table...");
+        await runQuery(db, "ALTER TABLE `EVENT` ADD COLUMN `Attachment_URL` VARCHAR(500) NULL");
+        console.log("✅ 'Attachment_URL' column added successfully.");
+      }
+
+      const hasAttachmentName = eventCols.some((col) => col.Field === "Attachment_Name");
+      if (!hasAttachmentName) {
+        console.log("➡️ Adding 'Attachment_Name' column to 'EVENT' table...");
+        await runQuery(db, "ALTER TABLE `EVENT` ADD COLUMN `Attachment_Name` VARCHAR(255) NULL");
+        console.log("✅ 'Attachment_Name' column added successfully.");
       }
     } catch (eventColErr) {
       console.warn("⚠️ Could not run EVENT column check/alter:", eventColErr.message);

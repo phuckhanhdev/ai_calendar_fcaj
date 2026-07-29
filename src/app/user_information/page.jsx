@@ -16,6 +16,7 @@ export default function UserInformationPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -39,6 +40,68 @@ export default function UserInformationPage() {
       }
     }
   }, [user, loading, router]);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    try {
+      // 1. Get presigned URL
+      const res = await fetch("/api/upload/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          folder: "avatars",
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Không lấy được presigned URL");
+      }
+
+      const { uploadUrl, publicUrl } = await res.json();
+
+      // 2. PUT file directly to S3
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Không thể upload file lên S3");
+      }
+
+      // 3. Update in Database
+      const updateRes = await fetch("/api/user/information", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          User_ID: user?.User_ID,
+          Phone_Number: formData.phone,
+          FName: formData.firstName,
+          LName: formData.lastName,
+          Date_of_birth: formData.dob || null,
+          Avatar_Url: publicUrl,
+        }),
+      });
+
+      if (updateRes.ok) {
+        toast.success("Cập nhật ảnh đại diện thành công!");
+        await refreshUser();
+      } else {
+        toast.error("Không thể cập nhật ảnh đại diện mới");
+      }
+    } catch (err) {
+      console.error("Avatar upload error:", err);
+      toast.error(err.message || "Có lỗi xảy ra khi tải ảnh lên");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,7 +143,7 @@ export default function UserInformationPage() {
     }
   };
 
-  const avatarSrc = avatarError ? FALLBACK_AVATAR : (user?.Shop_image || FALLBACK_AVATAR);
+  const avatarSrc = user?.Avatar_URL || user?.Avatar_Url || FALLBACK_AVATAR;
   const fullName = formatUserName({ FName: formData.firstName, LName: formData.lastName }, "Chưa cập nhật");
 
   if (loading) {
@@ -109,12 +172,37 @@ export default function UserInformationPage() {
           {/* Sidebar */}
           <aside className="user-sidebar">
             <div className="user-avatar-section">
-              <div className="user-avatar">
-                {/* Fallback image if user_icon doesn't exist */}
-                <div style={{ width: "100%", height: "100%", borderRadius: "50%", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", color: "#6366f1", fontSize: "36px", fontWeight: "bold" }}>
-                  {formData.firstName ? formData.firstName.charAt(0).toUpperCase() : "U"}
-                </div>
+              <div 
+                className="user-avatar" 
+                style={{ position: "relative", cursor: "pointer", borderRadius: "50%", overflow: "hidden" }} 
+                onClick={() => document.getElementById("avatarInput").click()}
+              >
+                {uploadingAvatar ? (
+                  <div style={{ width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", position: "absolute", zIndex: 2 }}>
+                    <ClipLoader color="#ffffff" size={24} />
+                  </div>
+                ) : (
+                  <div style={{ width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", position: "absolute", zIndex: 1, opacity: 0, transition: "opacity 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.opacity = 1} onMouseLeave={(e) => e.currentTarget.style.opacity = 0}>
+                    <span style={{ color: "#fff", fontSize: "12px", fontWeight: "600" }}>Đổi ảnh</span>
+                  </div>
+                )}
+                {user?.Avatar_URL || user?.Avatar_Url ? (
+                  <img src={user.Avatar_URL || user.Avatar_Url} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", backgroundColor: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", color: "#6366f1", fontSize: "36px", fontWeight: "bold" }}>
+                    {formData.firstName ? formData.firstName.charAt(0).toUpperCase() : "U"}
+                  </div>
+                )}
               </div>
+              
+              <input
+                id="avatarInput"
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleAvatarChange}
+                disabled={uploadingAvatar}
+              />
               <div>
                 <p className="user-avatar-name">{fullName}</p>
                 <p className="user-avatar-email">{formData.email}</p>
