@@ -45,7 +45,7 @@ async function migrate() {
 
     // 3. Check if column 'Role' exists in 'USER' table
     const columns = await runQuery(db, "DESCRIBE `USER`");
-    const hasRoleColumn = columns.some((col) => col.Field === "Role");
+    const hasRoleColumn = columns.some((col) => col.Field.toLowerCase() === "role");
 
     if (!hasRoleColumn) {
       console.log("➡️ Adding 'Role' column to 'USER' table...");
@@ -56,7 +56,7 @@ async function migrate() {
     }
 
     // Check and add 'Avatar_URL' column in 'USER' table
-    const hasAvatarColumn = columns.some((col) => col.Field === "Avatar_URL");
+    const hasAvatarColumn = columns.some((col) => col.Field.toLowerCase() === "avatar_url");
     if (!hasAvatarColumn) {
       console.log("➡️ Adding 'Avatar_URL' column to 'USER' table...");
       await runQuery(db, "ALTER TABLE `USER` ADD COLUMN `Avatar_URL` VARCHAR(500) NULL");
@@ -106,7 +106,7 @@ async function migrate() {
     // 6b. Check and add 'Requester_ID' to 'FRIENDSHIP' table
     try {
       const friendshipCols = await runQuery(db, "DESCRIBE `FRIENDSHIP`");
-      const hasRequesterId = friendshipCols.some((col) => col.Field === "Requester_ID");
+      const hasRequesterId = friendshipCols.some((col) => col.Field.toLowerCase() === "requester_id");
       if (!hasRequesterId) {
         console.log("➡️ Adding 'Requester_ID' column to 'FRIENDSHIP' table...");
         await runQuery(db, "ALTER TABLE `FRIENDSHIP` ADD COLUMN `Requester_ID` VARCHAR(255) NULL");
@@ -122,7 +122,7 @@ async function migrate() {
     // Check and add Is_Private, Attachment_URL, Attachment_Name columns to EVENT table
     try {
       const eventCols = await runQuery(db, "DESCRIBE `EVENT`");
-      const hasIsPrivate = eventCols.some((col) => col.Field === "Is_Private");
+      const hasIsPrivate = eventCols.some((col) => col.Field.toLowerCase() === "is_private");
       if (!hasIsPrivate) {
         console.log("➡️ Adding 'Is_Private' column to 'EVENT' table...");
         await runQuery(db, "ALTER TABLE `EVENT` ADD COLUMN `Is_Private` TINYINT DEFAULT 0");
@@ -131,14 +131,14 @@ async function migrate() {
         console.log("ℹ️ 'Is_Private' column already exists in 'EVENT' table.");
       }
 
-      const hasAttachmentUrl = eventCols.some((col) => col.Field === "Attachment_URL");
+      const hasAttachmentUrl = eventCols.some((col) => col.Field.toLowerCase() === "attachment_url");
       if (!hasAttachmentUrl) {
         console.log("➡️ Adding 'Attachment_URL' column to 'EVENT' table...");
         await runQuery(db, "ALTER TABLE `EVENT` ADD COLUMN `Attachment_URL` VARCHAR(500) NULL");
         console.log("✅ 'Attachment_URL' column added successfully.");
       }
 
-      const hasAttachmentName = eventCols.some((col) => col.Field === "Attachment_Name");
+      const hasAttachmentName = eventCols.some((col) => col.Field.toLowerCase() === "attachment_name");
       if (!hasAttachmentName) {
         console.log("➡️ Adding 'Attachment_Name' column to 'EVENT' table...");
         await runQuery(db, "ALTER TABLE `EVENT` ADD COLUMN `Attachment_Name` VARCHAR(255) NULL");

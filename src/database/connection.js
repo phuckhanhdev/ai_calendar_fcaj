@@ -1,5 +1,5 @@
 import mysql2 from "mysql2";
-import { loadAwsSecrets } from "@/lib/secrets-utils";
+import { loadAwsSecrets } from "../lib/secrets-utils.js";
 
 // Tải cấu hình từ AWS Secrets Manager bất đồng bộ trước khi các module khác truy vấn DB
 await loadAwsSecrets();
