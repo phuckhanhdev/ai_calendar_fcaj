@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyToken } from "@/config/auth";
 import { getUserProfile } from "@/services/userService";
 import { getUserEvents } from "@/services/calendarService";
-import { saveMessage, getHistory } from "@/models/chatModel";
+import { saveMessage, getHistory, pruneOldMessages, clearAllMessages } from "@/models/chatModel";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { calculateDestinyMatrix } from "@/utils/matrixDestiny";
@@ -89,10 +89,35 @@ export async function GET(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Auto-prune messages older than 3 days
+    try {
+      await pruneOldMessages(userId, 3);
+    } catch (pruneErr) {
+      console.warn("⚠️ Prune old messages warning:", pruneErr.message);
+    }
+
     const history = await getHistory(userId);
     return NextResponse.json({ success: true, history });
   } catch (error) {
     console.error("❌ GET /api/ai/chat history error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/ai/chat (Clear chat history)
+ */
+export async function DELETE(req) {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await clearAllMessages(userId);
+    return NextResponse.json({ success: true, message: "Chat history cleared successfully" });
+  } catch (error) {
+    console.error("❌ DELETE /api/ai/chat error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

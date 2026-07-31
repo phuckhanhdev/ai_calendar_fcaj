@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import PageHeader from "@/components/common/PageHeader";
 import FeatureContainer from "@/components/common/FeatureContainer";
 import Button from "@/components/ui/Button";
 import AppLayout from "@/components/layouts/AppLayout";
 import { parseICS } from "@/utils/icsParser";
 import { toast } from "react-toastify";
-import { Calendar, Check, Send, Sparkles, User } from "lucide-react";
+import { Calendar, Check, Send, Sparkles, User, Trash2 } from "lucide-react";
 import "./ai-assistant.css";
 
 interface ProposedEvent {
@@ -135,6 +135,16 @@ export default function AIAssistantPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+  };
+
+  // Auto scroll to latest chat whenever messages or loading state changes
+  useEffect(() => {
+    scrollToBottom(true);
+  }, [messages, loading]);
 
   // Load chat history from DB on mount
   useEffect(() => {
@@ -164,6 +174,7 @@ export default function AIAssistantPage() {
               };
             });
             setMessages(parsedHistory);
+            setTimeout(() => scrollToBottom(false), 100);
           }
         }
       } catch (err) {
@@ -172,6 +183,30 @@ export default function AIAssistantPage() {
     };
     loadHistory();
   }, []);
+
+  const handleClearHistory = async () => {
+    if (!confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện không?")) return;
+
+    try {
+      const res = await fetch("/api/ai/chat", { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Đã xóa toàn bộ lịch sử trò chuyện!");
+        setMessages([
+          {
+            id: "1",
+            sender: "ai",
+            content: "Đã dọn dẹp lịch sử trò chuyện. Tôi là Trợ lý Lịch Bản Mệnh LifeSync AI. Hãy cho tôi biết bạn cần lên lịch gì tiếp theo nhé!",
+            timestamp: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+          }
+        ]);
+      } else {
+        toast.error("Không thể xóa lịch sử trò chuyện.");
+      }
+    } catch (err) {
+      console.error("Failed to clear chat history:", err);
+      toast.error("Có lỗi xảy ra khi dọn dẹp tin nhắn.");
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -262,10 +297,22 @@ export default function AIAssistantPage() {
 
   return (
     <AppLayout>
-      <PageHeader
-        title="Trợ lý AI"
-        description="Trò chuyện và nhận đề xuất lập lịch trình thông minh tối ưu theo tử vi bản mệnh"
-      />
+      <div className="flex items-center justify-between pr-4">
+        <PageHeader
+          title="Trợ lý AI"
+          description="Trò chuyện và nhận đề xuất lập lịch trình thông minh tối ưu theo tử vi bản mệnh (Tự động lưu & xóa sau 3 ngày)"
+        />
+        <Button
+          onClick={handleClearHistory}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1.5 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+          title="Xóa toàn bộ lịch sử trò chuyện"
+        >
+          <Trash2 size={14} />
+          <span className="hidden sm:inline">Xóa lịch sử</span>
+        </Button>
+      </div>
 
       <FeatureContainer className="assistant-page-container">
         {/* Chat Messages Area */}
@@ -355,6 +402,9 @@ export default function AIAssistantPage() {
               </div>
             </div>
           )}
+
+          {/* Target for auto-scrolling to latest chat message */}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input area */}

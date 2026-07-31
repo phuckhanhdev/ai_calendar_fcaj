@@ -41,3 +41,22 @@ export async function getHistory(userId, limit = 50) {
   `;
   return await runQuery(sql, [userId, parseInt(limit)]);
 }
+
+/**
+ * Tự động xóa bớt tin nhắn cũ hơn N ngày (Mặc định 3 ngày)
+ */
+export async function pruneOldMessages(userId, days = 3) {
+  const sql = `
+    DELETE FROM \`CHAT_MESSAGE\`
+    WHERE User_ID = ? AND Created_at < NOW() - INTERVAL ? DAY
+  `;
+  return await runQuery(sql, [userId, parseInt(days)]);
+}
+
+/**
+ * Xóa toàn bộ lịch sử chat của User (Xóa thủ công)
+ */
+export async function clearAllMessages(userId) {
+  const sql = `DELETE FROM \`CHAT_MESSAGE\` WHERE User_ID = ?`;
+  return await runQuery(sql, [userId]);
+}
