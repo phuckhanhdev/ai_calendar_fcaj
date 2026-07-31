@@ -19,7 +19,7 @@ export async function loadAwsSecrets() {
       return true;
     }
 
-    const secretName = process.env.AWS_SECRET_NAME;
+    const secretName = process.env.APP_AWS_SECRET_NAME || process.env.AWS_SECRET_NAME;
     const region = process.env.APP_AWS_REGION || process.env.AWS_REGION || "us-east-1";
 
     if (!secretName) {

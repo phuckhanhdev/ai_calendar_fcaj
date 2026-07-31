@@ -6,7 +6,7 @@ let s3ClientInstance = null;
 export function getS3Client() {
   if (s3ClientInstance) return s3ClientInstance;
 
-  const region = process.env.APP_AWS_REGION || process.env.AWS_S3_REGION || process.env.AWS_REGION || "us-east-1";
+  const region = process.env.APP_AWS_REGION || process.env.APP_AWS_S3_REGION || process.env.AWS_S3_REGION || process.env.AWS_REGION || "us-east-1";
   
   const config = {
     region,
@@ -35,7 +35,7 @@ export function getS3Client() {
  */
 export async function generateUploadPresignedUrl(key, contentType) {
   const client = getS3Client();
-  const bucketName = process.env.AWS_S3_BUCKET_NAME || "aicalendar-attachments-bucket";
+  const bucketName = process.env.APP_AWS_S3_BUCKET_NAME || process.env.AWS_S3_BUCKET_NAME || "aicalendar-attachments-bucket";
 
   const command = new PutObjectCommand({
     Bucket: bucketName,
