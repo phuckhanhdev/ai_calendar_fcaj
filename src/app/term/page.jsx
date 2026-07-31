@@ -130,8 +130,17 @@ export default function TermsAndConditions() {
 
       {/* Footer */}
       <footer className="border-t border-slate-900 bg-slate-950 py-8 relative z-10">
-        <div className="max-w-4xl mx-auto px-6 text-center text-xs text-slate-500">
+        <div className="max-w-4xl mx-auto px-6 text-center text-xs text-slate-500 space-y-2">
           <p>© 2026 LifeSync AI Calendar. All rights reserved.</p>
+          <div className="flex justify-center items-center space-x-3 text-slate-400">
+            <Link href="/term" className="hover:text-white transition-colors">
+              Điều Khoản Sử Dụng
+            </Link>
+            <span>•</span>
+            <Link href="/privacy" className="hover:text-white transition-colors">
+              Chính Sách Bảo Mật
+            </Link>
+          </div>
           <p className="mt-1">Hệ thống Lịch thông minh phân tích thời gian thực tế hỗ trợ bởi Trí tuệ Nhân tạo AWS & Gemini.</p>
         </div>
       </footer>
