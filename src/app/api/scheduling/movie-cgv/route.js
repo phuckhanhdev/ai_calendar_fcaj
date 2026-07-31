@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyToken } from "@/config/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import { findTop3ClosestCGVCinemas, generateCGVMovieOptions } from "@/lib/cgv-movie-service";
+import { findTop3ClosestCGVCinemas } from "@/lib/cgv-movie-service";
 
 export const dynamic = "force-dynamic";
 
@@ -140,18 +140,14 @@ Hãy trả về CHỈ duy nhất 1 chuỗi JSON theo định dạng:
     // 3. Tìm 3 rạp CGV TP.HCM có tổng vị trí ngắn nhất (Có áp dụng trọng số Nam rước Nữ)
     const top3Cinemas = findTop3ClosestCGVCinemas(participantLocations);
 
-    // 3. Tạo danh sách 3 Lựa chọn xem phim tại 3 rạp này
-    const movieOptions = generateCGVMovieOptions(top3Cinemas, targetDate);
-
     return NextResponse.json({
       success: true,
       data: {
-        intent: "CGV_MOVIE_GROUP_SCHEDULING",
+        intent: "CGV_CINEMA_LOCATION_SCHEDULING",
         city: "TP.HCM",
         target_date: targetDate,
         total_participants: users_invited.length + 1,
-        top_closest_cinemas: top3Cinemas,
-        suggested_options: movieOptions
+        top_closest_cinemas: top3Cinemas
       }
     });
   } catch (error) {

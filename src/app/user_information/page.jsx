@@ -7,6 +7,7 @@ import { ClipLoader } from "react-spinners";
 import { toast } from "react-toastify";
 import { formatUserName } from "@/lib/name-utils";
 import { useAuth } from "@/context/AuthContext";
+import { getZodiacAvatarColor } from "@/lib/zodiac-utils";
 import "./user_infor.css";
 
 const FALLBACK_AVATAR = "/user_icon.png";
@@ -211,6 +212,39 @@ export default function UserInformationPage() {
     }
   };
 
+  const handleDeleteAvatar = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa ảnh đại diện và quay về avatar mặc định Cung Hoàng Đạo?")) return;
+
+    setUploadingAvatar(true);
+    try {
+      const response = await fetch("/api/user/information", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          User_ID: user?.User_ID,
+          Phone_Number: formData.phone,
+          FName: formData.firstName,
+          LName: formData.lastName,
+          Date_of_birth: formData.dob || null,
+          Avatar_Url: "",
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("Đã xóa ảnh đại diện và quay về màu Cung Hoàng Đạo!");
+        setAvatarError(false);
+        await refreshUser();
+      } else {
+        toast.error("Không thể xóa ảnh đại diện");
+      }
+    } catch (err) {
+      console.error("Delete avatar error:", err);
+      toast.error("Có lỗi xảy ra khi xóa ảnh");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -256,6 +290,7 @@ export default function UserInformationPage() {
 
   const avatarSrc = user?.Avatar_URL || user?.Avatar_Url || FALLBACK_AVATAR;
   const fullName = formatUserName({ FName: formData.firstName, LName: formData.lastName }, "Chưa cập nhật");
+  const zodiacColor = getZodiacAvatarColor(user?.User_ID, formData.dob);
 
   if (loading) {
     return (
@@ -305,8 +340,8 @@ export default function UserInformationPage() {
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 ) : (
-                  <div style={{ width: "100%", height: "100%", backgroundColor: "#F47521", display: "flex", alignItems: "center", justifyContent: "center", color: "#ffffff", fontSize: "36px", fontWeight: "bold" }}>
-                    {formData.lastName ? formData.lastName.charAt(0).toUpperCase() : (formData.firstName ? formData.firstName.charAt(0).toUpperCase() : "U")}
+                  <div style={{ width: "100%", height: "100%", backgroundColor: zodiacColor, display: "flex", alignItems: "center", justifyContent: "center", color: "#ffffff", fontSize: "36px", fontWeight: "bold", textShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
+                    {formData.firstName ? formData.firstName.charAt(0).toUpperCase() : (formData.lastName ? formData.lastName.charAt(0).toUpperCase() : "U")}
                   </div>
                 )}
               </div>
@@ -319,7 +354,30 @@ export default function UserInformationPage() {
                 onChange={handleFileSelect}
                 disabled={uploadingAvatar}
               />
-              <div>
+
+              {(user?.Avatar_URL || user?.Avatar_Url) && !avatarError && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAvatar}
+                  disabled={uploadingAvatar}
+                  style={{
+                    border: "none",
+                    background: "none",
+                    color: "#ef4444",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    marginTop: "6px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px"
+                  }}
+                >
+                  🗑️ Xóa ảnh đại diện
+                </button>
+              )}
+
+              <div style={{ marginTop: "8px" }}>
                 <p className="user-avatar-name">{fullName}</p>
                 <p className="user-avatar-email">{formData.email}</p>
               </div>

@@ -69,23 +69,30 @@ export async function POST(req) {
 
     const allParticipants = [hostId, ...users_invited];
 
-    // --- BƯỚC 1: AI PARSING DÙNG GEMINI/BEDROCK ---
+    // --- BƯỚC 1: AI MULTI-TASK PARSING DÙNG GEMINI/BEDROCK (OPENAI TOOL CALLING FORMAT) ---
     const todayStr = new Date().toISOString().substring(0, 10);
     const systemPrompt = `
-Bạn là Trợ lý Lập lịch AI. Nhiệm vụ của bạn là bóc tách yêu cầu lập lịch hẹn nhóm bằng tiếng Việt.
-Hôm nay là: ngày ${todayStr} (Chủ Nhật).
+Bạn là Trợ lý Lập lịch Khoa học Thông minh.
+Nhiệm vụ của bạn là bóc tách câu lệnh đa mục tiêu của người dùng thành các tác vụ khoa học.
+Hôm nay là: ngày ${todayStr}.
 
 Hãy phân tích câu sau: "${text}"
-Và trả về CHỈ duy nhất 1 chuỗi JSON định dạng sau (không chứa văn bản giải thích ngoài JSON):
+Và trả về CHỈ duy nhất 1 chuỗi JSON theo định dạng sau (không chứa văn bản giải thích ngoài JSON):
 {
-  "title": "Nội dung cuộc hẹn ngắn gọn (ví dụ: 'Đi xem phim')",
-  "duration_minutes": 180,
-  "time_range_start": "YYYY-MM-DD (ngày bắt đầu tìm kiếm lịch trống)",
-  "time_range_end": "YYYY-MM-DD (ngày kết thúc tìm kiếm lịch trống)"
+  "tasks": [
+    {
+      "task_id": "task_1",
+      "title": "Tên chi tiết hoạt động (ví dụ: 'Tập Gym')",
+      "category": "study | fitness | date | general",
+      "duration_minutes": 60,
+      "is_hard_constraint": false,
+      "fixed_start_time": "HH:MM (nếu có, hoặc null)",
+      "fixed_end_time": "HH:MM (nếu có, hoặc null)",
+      "location": "Tên địa điểm (nếu có, hoặc null)"
+    }
+  ]
 }
-
-Lưu ý tính toán ngày dựa trên "hôm nay" là ngày ${todayStr}. Ví dụ "cuối tuần này" là Thứ 7 và Chủ Nhật tuần này.
-    `;
+`;
 
     let aiOutput = "";
     const geminiKey = process.env.GEMINI_API_KEY;
@@ -103,7 +110,7 @@ Lưu ý tính toán ngày dựa trên "hôm nay" là ngày ${todayStr}. Ví dụ
         });
         const payload = {
           anthropic_version: "bedrock-2023-05-31",
-          max_tokens: 500,
+          max_tokens: 600,
           system: systemPrompt,
           messages: [{ role: "user", content: [{ type: "text", text: "Bóc tách câu trên." }] }]
         };
@@ -126,7 +133,7 @@ Lưu ý tính toán ngày dựa trên "hôm nay" là ngày ${todayStr}. Ví dụ
       try {
         const genAI = new GoogleGenerativeAI(geminiKey);
         const model = genAI.getGenerativeModel({
-          model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+          model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
           systemInstruction: systemPrompt
         });
         const result = await model.generateContent("Bóc tách câu trên.");
@@ -136,60 +143,36 @@ Lưu ý tính toán ngày dựa trên "hôm nay" là ngày ${todayStr}. Ví dụ
       }
     }
 
-    // Fallback static parsing if offline
-    if (!aiOutput) {
-      aiOutput = JSON.stringify({
-        title: "Lịch hẹn nhóm",
-        duration_minutes: 120,
-        time_range_start: todayStr,
-        time_range_end: new Date(Date.now() + 86400000 * 7).toISOString().substring(0, 10)
-      });
-    }
-
     // Parse JSON
-    let parsedParams;
+    let parsedTasks = [];
     try {
       const cleanJsonStr = aiOutput.replace(/```json|```/g, "").trim();
-      parsedParams = JSON.parse(cleanJsonStr);
+      const parsedData = JSON.parse(cleanJsonStr);
+      parsedTasks = parsedData.tasks || [];
     } catch (e) {
       console.error("Failed to parse AI output:", aiOutput);
-      parsedParams = {
-        title: "Lịch hẹn nhóm",
-        duration_minutes: 120,
-        time_range_start: todayStr,
-        time_range_end: new Date(Date.now() + 86400000 * 3).toISOString().substring(0, 10)
-      };
+      parsedTasks = [
+        {
+          task_id: "t_default",
+          title: text,
+          category: "general",
+          duration_minutes: 60,
+          is_hard_constraint: false
+        }
+      ];
     }
 
-    const { title, duration_minutes, time_range_start, time_range_end } = parsedParams;
-    const { timezoneOffset = 0 } = body;
-
-    // --- BƯỚC 2: QUÉT LỊCH VÀ TRẢ VỀ RAW MASKS ---
-    const dateList = [];
-    let currentDate = new Date(time_range_start);
-    const endDate = new Date(time_range_end);
-    
-    while (currentDate <= endDate) {
-      dateList.push(currentDate.toISOString().substring(0, 10));
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    const availabilityMap = {};
-    const promises = allParticipants.map(async (pId) => {
-      const masks = await getUserAvailabilityMasks(pId, dateList, timezoneOffset);
-      availabilityMap[pId] = masks;
-    });
-
-    await Promise.all(promises);
+    // --- BƯỚC 2: GIẢI BÀI TOÁN XẾP LỊCH KHOA HỌC QUA MASTER SCHEDULER ENGINE ---
+    const { MasterScientificScheduler } = await import("@/lib/scientific-scheduler");
+    const masterScheduler = new MasterScientificScheduler();
+    const scientificSchedule = masterScheduler.schedule(parsedTasks);
 
     return NextResponse.json({
       success: true,
-      title,
-      duration_minutes,
-      time_range_start,
-      time_range_end,
-      dates: dateList,
-      availability: availabilityMap
+      target_date: todayStr,
+      total_tasks_parsed: parsedTasks.length,
+      scientific_schedule: scientificSchedule,
+      raw_parsed_tasks: parsedTasks
     });
 
   } catch (error) {
