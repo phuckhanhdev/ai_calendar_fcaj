@@ -20,7 +20,7 @@ export async function loadAwsSecrets() {
     }
 
     const secretName = process.env.AWS_SECRET_NAME;
-    const region = process.env.AWS_REGION || "us-east-1";
+    const region = process.env.APP_AWS_REGION || process.env.AWS_REGION || "us-east-1";
 
     if (!secretName) {
       console.warn("⚠️ USE_AWS_SECRETS_MANAGER is true but AWS_SECRET_NAME is not set!");
@@ -32,11 +32,14 @@ export async function loadAwsSecrets() {
     try {
       const config = { region };
       
+      const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+      const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+
       // Nếu chạy ở local phát triển và có cấu hình key trong env
-      if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+      if (accessKeyId && secretAccessKey) {
         config.credentials = {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+          accessKeyId,
+          secretAccessKey,
         };
       }
 

@@ -6,17 +6,20 @@ let s3ClientInstance = null;
 export function getS3Client() {
   if (s3ClientInstance) return s3ClientInstance;
 
-  const region = process.env.AWS_S3_REGION || process.env.AWS_REGION || "us-east-1";
+  const region = process.env.APP_AWS_REGION || process.env.AWS_S3_REGION || process.env.AWS_REGION || "us-east-1";
   
   const config = {
     region,
   };
 
-  // If credentials are provided in process.env (either loaded from .env.local or Secrets Manager)
-  if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+
+  // If credentials are provided in process.env
+  if (accessKeyId && secretAccessKey) {
     config.credentials = {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      accessKeyId,
+      secretAccessKey,
     };
   }
 
