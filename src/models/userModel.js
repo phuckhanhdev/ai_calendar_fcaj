@@ -34,13 +34,13 @@ export async function getUserById(userId) {
 }
 
 /**
- * Tạo mới user
+ * Tạo mới user (Lưu Gender, Latitude, Longitude mặc định)
  */
 export async function createUser(email, hashedPassword, userData) {
   const userId = crypto.randomUUID();
   const sql = `
-    INSERT INTO \`USER\` (User_ID, Email, Password, FName, LName, Phone_Number, Date_of_birth, Email_Verified)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+    INSERT INTO \`USER\` (User_ID, Email, Password, FName, LName, Phone_Number, Date_of_birth, Gender, Latitude, Longitude, Email_Verified)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
   `;
   
   await runQuery(sql, [
@@ -50,16 +50,19 @@ export async function createUser(email, hashedPassword, userData) {
     userData.FName || "",
     userData.LName || "",
     userData.Phone_Number || "",
-    userData.Date_of_birth || null
+    userData.Date_of_birth || null,
+    userData.Gender || "Male",
+    userData.Latitude || 10.7769,
+    userData.Longitude || 106.7009
   ]);
 
   return { userId, email };
 }
 
 /**
- * Cập nhật thông tin profile của User
+ * Cập nhật thông tin profile của User (bao gồm Gender, Latitude, Longitude)
  */
-export async function updateUserProfile(userId, FName, LName, Phone_Number, Date_of_birth, Birth_Time = null, Avatar_Url = null) {
+export async function updateUserProfile(userId, FName, LName, Phone_Number, Date_of_birth, Birth_Time = null, Avatar_Url = null, Gender = null, Latitude = null, Longitude = null) {
   const sql = `
     UPDATE \`USER\`
     SET 
@@ -68,10 +71,13 @@ export async function updateUserProfile(userId, FName, LName, Phone_Number, Date
       Phone_Number = ?, 
       Date_of_birth = ?,
       Birth_Time = COALESCE(?, Birth_Time),
-      Avatar_Url = COALESCE(?, Avatar_Url)
+      Avatar_Url = COALESCE(?, Avatar_Url),
+      Gender = COALESCE(?, Gender),
+      Latitude = COALESCE(?, Latitude),
+      Longitude = COALESCE(?, Longitude)
     WHERE User_ID = ?
   `;
-  return await runQuery(sql, [FName, LName, Phone_Number, Date_of_birth, Birth_Time, Avatar_Url, userId]);
+  return await runQuery(sql, [FName, LName, Phone_Number, Date_of_birth, Birth_Time, Avatar_Url, Gender, Latitude, Longitude, userId]);
 }
 
 /**

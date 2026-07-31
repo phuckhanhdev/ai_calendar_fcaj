@@ -11,7 +11,7 @@ export async function getUserProfile(userId) {
  * Cập nhật thông tin hồ sơ
  */
 export async function updateUserProfile(userId, profileData) {
-  const { FName, LName, Phone_Number, Date_of_birth, Birth_Time, Avatar_Url } = profileData;
+  const { FName, LName, Phone_Number, Date_of_birth, Birth_Time, Avatar_Url, Gender, Latitude, Longitude } = profileData;
   return await userModel.updateUserProfile(
     userId,
     FName,
@@ -19,7 +19,10 @@ export async function updateUserProfile(userId, profileData) {
     Phone_Number,
     Date_of_birth,
     Birth_Time || null,
-    Avatar_Url || null
+    Avatar_Url || null,
+    Gender || null,
+    Latitude || null,
+    Longitude || null
   );
 }
 

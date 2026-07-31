@@ -65,6 +65,26 @@ async function migrate() {
       console.log("ℹ️ 'Avatar_URL' column already exists in 'USER' table.");
     }
 
+    // Check and add 'Gender' column in 'USER' table
+    const hasGenderColumn = columns.some((col) => col.Field.toLowerCase() === "gender");
+    if (!hasGenderColumn) {
+      console.log("➡️ Adding 'Gender' column to 'USER' table...");
+      await runQuery(db, "ALTER TABLE `USER` ADD COLUMN `Gender` VARCHAR(10) DEFAULT 'Male'");
+      console.log("✅ 'Gender' column added successfully.");
+    } else {
+      console.log("ℹ️ 'Gender' column already exists in 'USER' table.");
+    }
+
+    // Check and add 'Latitude' and 'Longitude' columns in 'USER' table
+    const hasLatColumn = columns.some((col) => col.Field.toLowerCase() === "latitude");
+    if (!hasLatColumn) {
+      console.log("➡️ Adding 'Latitude' & 'Longitude' columns to 'USER' table...");
+      await runQuery(db, "ALTER TABLE `USER` ADD COLUMN `Latitude` DECIMAL(10, 8) DEFAULT 10.7769, ADD COLUMN `Longitude` DECIMAL(11, 8) DEFAULT 106.7009");
+      console.log("✅ Location columns added successfully.");
+    } else {
+      console.log("ℹ️ 'Latitude' & 'Longitude' columns already exist in 'USER' table.");
+    }
+
     // 4. Create 'SYSTEM_SETTING' table
     console.log("➡️ Creating 'SYSTEM_SETTING' table...");
     await runQuery(db, `

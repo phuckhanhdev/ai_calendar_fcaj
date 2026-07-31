@@ -12,13 +12,76 @@ export default function SignIn() {
   const [err, setErr] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { user, loginUser } = useAuth();
+  const { user, loginUser, refreshUser } = useAuth();
 
   useEffect(() => {
     if (user) {
       router.push("/");
     }
   }, [user, router]);
+
+  // Load Google Identity Services script and initialize button
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    // Load SDK script dynamically
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredentialResponse,
+        });
+        window.google.accounts.id.renderButton(
+          document.getElementById("googleButton"),
+          {
+            theme: "outline",
+            size: "large",
+            width: "100%",
+            text: "signin_with",
+            shape: "rectangular"
+          }
+        );
+      }
+    };
+
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, []);
+
+  async function handleGoogleCredentialResponse(response) {
+    setIsLoading(true);
+    setErr("");
+    try {
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Đăng nhập Google thất bại");
+      }
+      // Refresh Auth Context to set user state
+      await refreshUser();
+      router.push("/");
+    } catch (error) {
+      console.error("Google auth error:", error);
+      setErr(error.message || "Không thể xác thực tài khoản Google");
+      setIsLoading(false);
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -122,6 +185,19 @@ export default function SignIn() {
               )}
             </button>
           </form>
+
+          {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+            <div className="google-login-section" style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "10px" }}>
+                <div style={{ flex: 1, height: "1px", backgroundColor: "#334155" }}></div>
+                <span style={{ fontSize: "13px", color: "#64748b" }}>Hoặc</span>
+                <div style={{ flex: 1, height: "1px", backgroundColor: "#334155" }}></div>
+              </div>
+              <div className="google-signin-wrapper" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+                <div id="googleButton" style={{ width: "100%" }}></div>
+              </div>
+            </div>
+          )}
 
           <div className="auth-footer">
             Chưa có tài khoản? <Link href="/sign_up_1">Đăng ký ngay</Link>
