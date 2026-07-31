@@ -128,18 +128,28 @@ Và trả về CHỈ duy nhất 1 chuỗi JSON theo định dạng sau (không c
       }
     }
 
-    // Gemini fallback
-    if (!aiOutput && geminiKey && geminiKey !== "" && geminiKey !== "YOUR_GEMINI_API_KEY") {
-      try {
-        const genAI = new GoogleGenerativeAI(geminiKey);
-        const model = genAI.getGenerativeModel({
-          model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
-          systemInstruction: systemPrompt
-        });
-        const result = await model.generateContent("Bóc tách câu trên.");
-        aiOutput = result.response.text();
-      } catch (err) {
-        console.error("Gemini error parsing scheduling request:", err);
+    // Gemini fallback (Multi-Key)
+    const geminiKeys = [
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_BACKUP,
+      process.env.GEMINI_API_KEY_2
+    ].filter(k => k && k !== "" && k !== "YOUR_GEMINI_API_KEY");
+
+    if (!aiOutput && geminiKeys.length > 0) {
+      for (let i = 0; i < geminiKeys.length; i++) {
+        try {
+          console.log(`🔄 [Parsing] Calling Gemini Key ${i + 1}...`);
+          const genAI = new GoogleGenerativeAI(geminiKeys[i]);
+          const model = genAI.getGenerativeModel({
+            model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+            systemInstruction: systemPrompt
+          });
+          const result = await model.generateContent("Bóc tách câu trên.");
+          aiOutput = result.response.text();
+          if (aiOutput) break;
+        } catch (err) {
+          console.warn(`⚠️ Gemini Key ${i + 1} error parsing scheduling request:`, err.message);
+        }
       }
     }
 

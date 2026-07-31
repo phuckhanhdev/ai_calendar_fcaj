@@ -83,27 +83,36 @@ Hãy đưa ra lời khuyên năng lượng số học/tử vi ngắn gọn, súc
     }
 
     // =========================================================================
-    // 🔄 BƯỚC 2: PHƯƠNG ÁN PHÒNG BỊ - GỌI GOOGLE GEMINI (FALLBACK)
+    // 🔄 BƯỚC 2: PHƯƠNG ÁN PHÒNG BỊ - GỌI GOOGLE GEMINI (MULTI-KEY FALLBACK)
     // =========================================================================
-    if (!advice && geminiKey && geminiKey !== "" && geminiKey !== "YOUR_GEMINI_API_KEY") {
-      try {
-        console.log("🔄 [AI Service] Đang chuyển sang gọi Google Gemini (Fallback)...");
-        const genAI = new GoogleGenerativeAI(geminiKey);
-        const model = genAI.getGenerativeModel({ 
-          model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
-          systemInstruction: systemPrompt
-        });
+    const geminiKeys = [
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_BACKUP,
+      process.env.GEMINI_API_KEY_2
+    ].filter(k => k && k !== "" && k !== "YOUR_GEMINI_API_KEY");
 
-        const result = await model.generateContent(userPrompt);
-        const geminiAdvice = result.response.text();
+    if (!advice && geminiKeys.length > 0) {
+      for (let i = 0; i < geminiKeys.length; i++) {
+        try {
+          console.log(`🔄 [AI Service] Đang chuyển sang gọi Google Gemini Key ${i + 1} (Fallback)...`);
+          const genAI = new GoogleGenerativeAI(geminiKeys[i]);
+          const model = genAI.getGenerativeModel({ 
+            model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+            systemInstruction: systemPrompt
+          });
 
-        if (geminiAdvice) {
-          advice = geminiAdvice;
-          provider = "Google Gemini (Fallback)";
-          console.log("✅ [AI Service] Kết nối Google Gemini thành công.");
+          const result = await model.generateContent(userPrompt);
+          const geminiAdvice = result.response.text();
+
+          if (geminiAdvice) {
+            advice = geminiAdvice;
+            provider = `Google Gemini Key ${i + 1} (Fallback)`;
+            console.log(`✅ [AI Service] Kết nối Google Gemini Key ${i + 1} thành công.`);
+            break;
+          }
+        } catch (geminiError) {
+          console.warn(`⚠️ [AI Service] Google Gemini Key ${i + 1} gặp lỗi. Chi tiết:`, geminiError.message);
         }
-      } catch (geminiError) {
-        console.warn("⚠️ [AI Service] Google Gemini gặp lỗi. Lỗi chi tiết:", geminiError.message);
       }
     }
 

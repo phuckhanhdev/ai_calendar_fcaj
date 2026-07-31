@@ -323,21 +323,30 @@ Hãy chọn các khung giờ trống phù hợp trong lịch bận ở trên, s�
       }
     }
 
-    // Call Gemini (Fallback)
-    if (!aiOutput && geminiKey && geminiKey !== "" && geminiKey !== "YOUR_GEMINI_API_KEY") {
-      try {
-        console.log("🔄 [AI Chat] Calling Google Gemini...");
-        const genAI = new GoogleGenerativeAI(geminiKey);
-        const model = genAI.getGenerativeModel({
-          model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
-          systemInstruction: systemPrompt
-        });
+    // Call Gemini (Fallback with Multi-Key Support)
+    const geminiKeys = [
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_BACKUP,
+      process.env.GEMINI_API_KEY_2
+    ].filter(k => k && k !== "" && k !== "YOUR_GEMINI_API_KEY");
 
-        const result = await model.generateContent(userPrompt);
-        aiOutput = result.response.text();
-        provider = "Google Gemini";
-      } catch (err) {
-        console.error("❌ Gemini error in chat:", err);
+    if (!aiOutput && geminiKeys.length > 0) {
+      for (let i = 0; i < geminiKeys.length; i++) {
+        try {
+          console.log(`🔄 [AI Chat] Calling Google Gemini (Key ${i + 1})...`);
+          const genAI = new GoogleGenerativeAI(geminiKeys[i]);
+          const model = genAI.getGenerativeModel({
+            model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+            systemInstruction: systemPrompt
+          });
+
+          const result = await model.generateContent(userPrompt);
+          aiOutput = result.response.text();
+          provider = `Google Gemini (Key ${i + 1})`;
+          if (aiOutput) break;
+        } catch (err) {
+          console.warn(`⚠️ Gemini Key ${i + 1} error in chat:`, err.message);
+        }
       }
     }
 
