@@ -8,6 +8,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import { toast } from "react-toastify";
 import { formatUserName } from "@/lib/name-utils";
 import { ClipLoader } from "react-spinners";
+import { useRouter } from "next/navigation";
 import "./calendar-view.css";
 
 interface EventItem {
@@ -22,7 +23,22 @@ interface EventItem {
   attachmentName?: string;
 }
 
+function parseInlineFormatting(text: string) {
+  if (!text) return null;
+  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={idx} className="font-extrabold text-amber-950">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return <em key={idx} className="italic text-orange-950 font-semibold">{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
 export default function CalendarView({ user }: { user: any }) {
+  const router = useRouter();
   // Danh sách sự kiện
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
@@ -95,12 +111,14 @@ export default function CalendarView({ user }: { user: any }) {
     const startFormatted = formatForDateTimeInput(selectInfo.startStr);
     const endFormatted = formatForDateTimeInput(selectInfo.endStr);
 
+    const userDefaultLocation = (user as any)?.Address || (user as any)?.address || (user as any)?.location || "";
+
     setEventForm({
       id: "",
       title: "",
       start: startFormatted,
       end: endFormatted,
-      location: "",
+      location: userDefaultLocation,
       description: "",
       color: "#6366f1",
       attachmentUrl: "",
@@ -108,6 +126,13 @@ export default function CalendarView({ user }: { user: any }) {
     });
     setModalMode("create");
     setIsModalOpen(true);
+
+    // Nếu chưa có vị trí mặc định trong hồ sơ -> Tự động chạy GPS định vị
+    if (!userDefaultLocation) {
+      setTimeout(() => {
+        handleGetMyLocation();
+      }, 300);
+    }
   };
 
   // Kích hoạt khi click vào một sự kiện có sẵn (hiển thị chi tiết)
@@ -281,6 +306,137 @@ export default function CalendarView({ user }: { user: any }) {
     }
   };
 
+  const handleGetMyLocation = () => {
+    const userDefaultLocation = (user as any)?.Address || (user as any)?.address || (user as any)?.location || "";
+
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      if (userDefaultLocation) {
+        setEventForm(prev => ({ ...prev, location: userDefaultLocation }));
+        toast.success(`Đã tự động điền vị trí mặc định từ hồ sơ: ${userDefaultLocation}`);
+        return;
+      }
+      toast.warning("Trình duyệt của bạn không hỗ trợ lấy vị trí GPS");
+      return;
+    }
+
+    toast.info("Đang định vị GPS...");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
+          const data = await res.json();
+          const placeName = data.display_name?.split(",").slice(0, 3).join(",") || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setEventForm(prev => ({ ...prev, location: placeName }));
+          toast.success("Đã định vị thành công địa điểm gần bạn!");
+        } catch (err) {
+          if (userDefaultLocation) {
+            setEventForm(prev => ({ ...prev, location: userDefaultLocation }));
+            toast.success(`Đã sử dụng vị trí mặc định: ${userDefaultLocation}`);
+          } else {
+            setEventForm(prev => ({ ...prev, location: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
+            toast.success("Đã lấy tọa độ GPS của bạn!");
+          }
+        }
+      },
+      (err) => {
+        if (userDefaultLocation) {
+          setEventForm(prev => ({ ...prev, location: userDefaultLocation }));
+          toast.success(`Đã sử dụng vị trí mặc định từ hồ sơ: ${userDefaultLocation}`);
+        } else {
+          toast.error("Không thể lấy vị trí GPS. Vui lòng cấp quyền vị trí trên trình duyệt.");
+        }
+      }
+    );
+  };
+
+  const handleOpenAttachment = async () => {
+    if (!selectedEvent?.attachmentUrl) return;
+    try {
+      const res = await fetch(`/api/upload/presign?url=${encodeURIComponent(selectedEvent.attachmentUrl)}`);
+      const data = await res.json();
+      const openUrl = data.downloadUrl || selectedEvent.attachmentUrl;
+      window.open(openUrl, "_blank");
+    } catch (err) {
+      window.open(selectedEvent.attachmentUrl, "_blank");
+    }
+  };
+
+  // Share Event Friend Modal States
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [friendsList, setFriendsList] = useState<any[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([]);
+  const [sendingShareInvite, setSendingShareInvite] = useState(false);
+
+  const handleOpenShareModal = async () => {
+    if (!selectedEvent) return;
+    setIsShareModalOpen(true);
+    setLoadingFriends(true);
+    setSelectedFriendIds([]);
+    try {
+      const res = await fetch("/api/friends");
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setFriendsList(data.friends || []);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi tải danh sách bạn bè");
+    } finally {
+      setLoadingFriends(false);
+    }
+  };
+
+  const toggleSelectFriend = (friendId: number) => {
+    setSelectedFriendIds(prev =>
+      prev.includes(friendId)
+        ? prev.filter(id => id !== friendId)
+        : [...prev, friendId]
+    );
+  };
+
+  const handleSendShareInvite = async () => {
+    if (!selectedEvent || selectedFriendIds.length === 0) {
+      toast.warning("Vui lòng chọn ít nhất 1 người bạn để rủ đi chung!");
+      return;
+    }
+
+    setSendingShareInvite(true);
+    try {
+      const res = await fetch("/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send_event_invite",
+          friendIds: selectedFriendIds,
+          eventData: {
+            title: selectedEvent.title,
+            start: selectedEvent.start,
+            end: selectedEvent.end,
+            location: selectedEvent.location,
+            description: selectedEvent.description,
+            color: selectedEvent.color
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`Đã gửi lời mời đi chung đến ${selectedFriendIds.length} người bạn!`);
+        setIsShareModalOpen(false);
+        setSelectedFriendIds([]);
+      } else {
+        toast.error(data.error || "Gửi lời mời thất bại");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi máy chủ khi gửi lời mời");
+    } finally {
+      setSendingShareInvite(false);
+    }
+  };
+
   // Gọi API lấy lời khuyên từ Bedrock AI / Gemini
   const handleGetAiAdvice = async () => {
     if (!selectedEvent) return;
@@ -449,13 +605,24 @@ export default function CalendarView({ user }: { user: any }) {
 
               <div className="modal-form-group">
                 <label>Địa điểm</label>
-                <input
-                  type="text"
-                  placeholder="Thêm vị trí/địa điểm..."
-                  value={eventForm.location}
-                  onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
-                  className="modal-input"
-                />
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    type="text"
+                    placeholder="Thêm vị trí/địa điểm..."
+                    value={eventForm.location}
+                    onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
+                    className="modal-input"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGetMyLocation}
+                    className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-300 transition-all flex items-center gap-1 whitespace-nowrap"
+                    title="Định vị GPS địa điểm gần tôi"
+                  >
+                    📍 Vị trí gần tôi
+                  </button>
+                </div>
               </div>
 
               <div className="modal-form-group">
@@ -524,10 +691,10 @@ export default function CalendarView({ user }: { user: any }) {
       {/* ========================================================================= */}
       {isDetailOpen && selectedEvent && (
         <div className="modal-overlay">
-          <div className="modal-card">
+          <div className="modal-card max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             <div 
               style={{ borderTop: `6px solid ${selectedEvent.color || "#6366f1"}` }}
-              className="detail-header-container"
+              className="detail-header-container shrink-0"
             >
               <div>
                 <h2 style={{ margin: "0 0 6px 0", fontSize: "20px", fontWeight: "800", color: "#1e293b", lineHeight: "1.2" }}>
@@ -538,6 +705,14 @@ export default function CalendarView({ user }: { user: any }) {
                 </p>
               </div>
               <div className="detail-actions-right">
+                <button
+                  onClick={handleOpenShareModal}
+                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow transition-all flex items-center gap-1"
+                  title="Rủ bạn bè đi chung sự kiện này"
+                  style={{ marginRight: "4px" }}
+                >
+                  👥 Rủ bạn đi chung
+                </button>
                 <button 
                   onClick={handleEditFromDetails}
                   className="detail-icon-btn"
@@ -569,7 +744,7 @@ export default function CalendarView({ user }: { user: any }) {
               </div>
             </div>
 
-            <div className="modal-body" style={{ paddingTop: 0 }}>
+            <div className="modal-body overflow-y-auto flex-1 p-6 space-y-4" style={{ paddingTop: 0, maxHeight: "calc(90vh - 90px)" }}>
               {/* Thời gian */}
               <div className="detail-body-row">
                 <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -585,14 +760,21 @@ export default function CalendarView({ user }: { user: any }) {
                 </span>
               </div>
 
-              {/* Địa điểm */}
+              {/* Địa điểm & Tự động gắn Google Maps Link */}
               {selectedEvent.location && (
                 <div className="detail-body-row">
                   <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
-                  <span>{selectedEvent.location}</span>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEvent.location)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 font-bold hover:underline flex items-center gap-1"
+                  >
+                    {selectedEvent.location} 🗺️ (Mở Google Maps)
+                  </a>
                 </div>
               )}
 
@@ -604,18 +786,16 @@ export default function CalendarView({ user }: { user: any }) {
                 </p>
               </div>
 
-              {/* Tệp đính kèm */}
+              {/* Tệp đính kèm (Fix lỗi Presigned URL 403) */}
               {selectedEvent.attachmentUrl && (
                 <div className="detail-desc-box" style={{ marginTop: "12px", borderLeft: "4px solid #10b981" }}>
                   <p className="detail-desc-title" style={{ color: "#10b981" }}>📎 Tệp đính kèm (AWS S3)</p>
-                  <a 
-                    href={selectedEvent.attachmentUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ fontSize: "14px", color: "#6366f1", fontWeight: "600", textDecoration: "underline", display: "inline-block", marginTop: "4px" }}
+                  <button 
+                    onClick={handleOpenAttachment}
+                    style={{ fontSize: "13px", color: "#6366f1", fontWeight: "700", textDecoration: "underline", display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "4px" }}
                   >
-                    {selectedEvent.attachmentName || "Tải xuống tệp đính kèm"}
-                  </a>
+                    📥 {selectedEvent.attachmentName || "Xem & Tải tệp đính kèm"}
+                  </button>
                 </div>
               )}
 
@@ -637,12 +817,133 @@ export default function CalendarView({ user }: { user: any }) {
                 {aiAdvice && (
                   <div className="ai-advice-box">
                     <p className="ai-advice-title">
-                      <span>🔮</span> Lời khuyên của Thầy AI
+                      <span>🔮</span> Lời khuyên Bản mệnh từ AI
                     </p>
-                    <p className="ai-advice-content">"{aiAdvice}"</p>
+                    <div className="ai-advice-content text-slate-800 text-xs sm:text-sm leading-relaxed space-y-2 mt-2 p-4 bg-gradient-to-b from-amber-50/90 to-orange-50/60 rounded-2xl border border-amber-200/90 shadow-inner">
+                      {aiAdvice.split(/\n+/).map((line, idx) => {
+                        const trimmed = line.trim();
+                        if (!trimmed) return null;
+                        if (trimmed === "---" || trimmed === "***") {
+                          return <hr key={idx} className="border-t border-amber-200/90 my-2.5" />;
+                        }
+                        if (trimmed.startsWith("### ")) {
+                          return (
+                            <h3 key={idx} className="text-sm font-extrabold text-amber-950 border-b border-amber-200/80 pb-1 mt-3 mb-1">
+                              {parseInlineFormatting(trimmed.replace(/^###\s+/, ""))}
+                            </h3>
+                          );
+                        }
+                        if (trimmed.startsWith("## ")) {
+                          return (
+                            <h2 key={idx} className="text-base font-black text-amber-950 mt-4 mb-1">
+                              {parseInlineFormatting(trimmed.replace(/^##\s+/, ""))}
+                            </h2>
+                          );
+                        }
+                        if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+                          return (
+                            <li key={idx} className="list-disc list-inside text-amber-950 font-medium my-1">
+                              {parseInlineFormatting(trimmed.replace(/^[-*]\s+/, ""))}
+                            </li>
+                          );
+                        }
+                        return (
+                          <p key={idx} className="m-0 text-slate-800">
+                            {parseInlineFormatting(trimmed)}
+                          </p>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 👥 MODAL: CHỌN BẠN BÈ ĐỂ RỦ ĐI CHUNG */}
+      {/* ========================================================================= */}
+      {isShareModalOpen && selectedEvent && (
+        <div className="modal-overlay">
+          <div className="modal-card max-w-md w-full p-6 bg-white rounded-2xl shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900 m-0">
+                  👥 Rủ bạn bè đi chung
+                </h3>
+                <p className="text-xs text-slate-500 m-0 mt-0.5">
+                  Sự kiện: <span className="font-bold text-indigo-600">"{selectedEvent.title}"</span>
+                </p>
+              </div>
+              <button
+                onClick={() => setIsShareModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 font-black text-lg"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="max-h-60 overflow-y-auto space-y-2 py-1">
+              {loadingFriends ? (
+                <div className="text-center py-6 text-xs text-slate-400">
+                  Đang tải danh sách bạn bè...
+                </div>
+              ) : friendsList.length === 0 ? (
+                <div className="text-center py-6 text-xs text-slate-500">
+                  Bạn chưa có bạn bè nào trong danh sách. Hãy kết bạn ở mục <b>Bạn bè</b> trước nhé!
+                </div>
+              ) : (
+                friendsList.map((friend: any) => {
+                  const friendId = friend.id || friend.User_ID;
+                  const friendName = formatUserName(friend, friend.email || "Bạn bè");
+                  const isSelected = selectedFriendIds.includes(friendId);
+                  return (
+                    <div
+                      key={friendId}
+                      onClick={() => toggleSelectFriend(friendId)}
+                      className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                        isSelected
+                          ? "border-indigo-500 bg-indigo-50/70"
+                          : "border-slate-200 hover:border-slate-300 bg-slate-50/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">
+                          {friendName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-bold text-xs text-slate-800 m-0">{friendName}</p>
+                          <p className="text-[10px] text-slate-400 m-0">{friend.email}</p>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                      />
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                onClick={() => setIsShareModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSendShareInvite}
+                disabled={sendingShareInvite || selectedFriendIds.length === 0}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow transition-all disabled:opacity-50 flex items-center gap-1"
+              >
+                {sendingShareInvite ? "Đang gửi..." : `✉️ Gửi lời mời (${selectedFriendIds.length})`}
+              </button>
             </div>
           </div>
         </div>

@@ -40,7 +40,8 @@ export default function TopNavbar() {
         setHistoricalNotifications(notifData.notifications || []);
       }
     } catch (err) {
-      console.error("Error fetching requests for notification:", err);
+      // Gracefully log network warnings during page reloads or server restarts
+      console.warn("Network notice when loading notifications:", err);
     }
   };
 

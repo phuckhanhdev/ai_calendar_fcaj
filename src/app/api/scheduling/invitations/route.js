@@ -35,7 +35,7 @@ export async function GET(req) {
 
     const sql = `
       SELECT mr.Meeting_Request_ID AS id, mr.Title AS title, mr.Duration_Minutes AS duration,
-             mr.Created_at AS createdAt, CONCAT(u.FName, ' ', u.LName) AS hostName, u.Email AS hostEmail,
+             mr.Created_at AS createdAt, COALESCE(NULLIF(TRIM(CONCAT(COALESCE(u.FName, ''), ' ', COALESCE(u.LName, ''))), ''), u.Email) AS hostName, u.Email AS hostEmail,
              mp.Status AS participantStatus
       FROM \`MEETING_PARTICIPANT\` mp
       JOIN \`MEETING_REQUEST\` mr ON mr.Meeting_Request_ID = mp.Meeting_Request_ID

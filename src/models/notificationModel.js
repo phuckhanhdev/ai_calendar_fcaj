@@ -16,6 +16,13 @@ function runQuery(sql, params = []) {
  * Tạo thông báo mới cho User
  */
 export async function createNotification(userId, type, title, content, link = null) {
+  // Tự động chuyển đổi cột Link sang TEXT để tránh bị cắt chuỗi JSON ở 255 ký tự
+  try {
+    await runQuery("ALTER TABLE `NOTIFICATION` MODIFY COLUMN `Link` TEXT");
+  } catch (e) {
+    // Suppress if table alter not needed or fails on permission
+  }
+
   const notificationId = crypto.randomUUID();
   const sql = `
     INSERT INTO \`NOTIFICATION\` (Notification_ID, User_ID, Type, Title, Content, Link, Is_Read)

@@ -4,24 +4,47 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const dynamic = "force-dynamic";
 
+function calculateLifePathNumber(dobStr) {
+  if (!dobStr) return 3;
+  const nums = dobStr.replace(/\D/g, "");
+  if (!nums) return 3;
+  let sum = nums.split("").reduce((acc, curr) => acc + parseInt(curr, 10), 0);
+  while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+    sum = sum.toString().split("").reduce((acc, curr) => acc + parseInt(curr, 10), 0);
+  }
+  return sum;
+}
+
 export async function POST(req) {
   try {
     const { name, dob, eventTitle, eventDesc, eventTime } = await req.json();
+
+    const lifePath = calculateLifePathNumber(dob);
 
     const geminiKey = process.env.GEMINI_API_KEY;
     const awsAccessKey = process.env.AWS_ACCESS_KEY_ID;
     const awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY;
 
-    const systemPrompt = "Bạn là Thầy Tử Vi và Chuyên gia Số học AI. Hãy phân tích mức độ hòa hợp năng lượng của sự kiện với bản mệnh của người dùng, đưa ra lời khuyên ngắn gọn, hữu ích và mang tính động viên.";
-    const userPrompt = `
-Hãy phân tích sự kiện sau cho người dùng:
-- Họ tên: ${name}
-- Ngày sinh: ${dob}
-- Tên sự kiện: ${eventTitle}
-- Mô tả sự kiện: ${eventDesc || "Không có mô tả"}
-- Thời gian diễn ra: ${eventTime || "00:00"}
+    const systemPrompt = `
+Bạn là Chuyên gia Tư vấn Lập lịch & Luận giải Bản mệnh AI tên LifeSync AI.
+Nhiệm vụ của bạn là đọc thông tin cá nhân và chi tiết sự kiện của người dùng, đưa ra phân tích sự hòa hợp năng lượng và GỢI Ý HÀNH ĐỘNG THỰC TẾ giúp người dùng hoàn thành sự kiện tốt nhất.
 
-Hãy đưa ra lời khuyên năng lượng số học/tử vi ngắn gọn, súc tích (khoảng 3-4 câu) bằng tiếng Việt.
+Định dạng trả về: Chuỗi Markdown đẹp mắt, mạch lạc, dễ đọc với các dấu in đậm **từ khóa** và gạch đầu dòng rõ ràng.
+`;
+
+    const userPrompt = `
+Hãy luận giải và đưa ra lời khuyên cho sự kiện của người dùng:
+- Họ tên: ${name}
+- Ngày sinh: ${dob} (Con số chủ đạo Thần số học: Số ${lifePath})
+- Sự kiện: "${eventTitle}"
+- Chi tiết / Mô tả sự kiện: "${eventDesc || "Không có mô tả chi tiết"}"
+- Khung giờ diễn ra: ${eventTime || "00:00"}
+
+YÊU CẦU NỘI DUNG:
+1. **Phân tích Tương hợp Bản mệnh**: Đánh giá sự hòa hợp giữa Con số chủ đạo số ${lifePath} và sự kiện "${eventTitle}" trong khung giờ ${eventTime}.
+2. **Gợi ý Hành động Thực tế (Nên làm gì)**: Đọc kỹ tên và mô tả sự kiện để gợi ý 2-3 hành động thiết thực người dùng NÊN LÀM để gặt hái kết quả tốt nhất.
+
+Hãy viết giọng văn ấm áp, truyền cảm hứng, ngắn gọn trong khoảng 4-6 câu, có in đậm các từ khóa chính.
 `;
 
     let advice = null;

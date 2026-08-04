@@ -54,3 +54,34 @@ export async function POST(req) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function GET(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const key = searchParams.get("key");
+    const rawUrl = searchParams.get("url");
+
+    if (!key && !rawUrl) {
+      return NextResponse.json({ error: "Missing key or url parameter" }, { status: 400 });
+    }
+
+    let targetKey = key;
+    if (!targetKey && rawUrl) {
+      // Extract key from full S3 URL
+      const match = rawUrl.match(/amazonaws\.com\/(.+)$/);
+      if (match) targetKey = match[1];
+    }
+
+    if (!targetKey) {
+      return NextResponse.json({ downloadUrl: rawUrl });
+    }
+
+    const { generateDownloadPresignedUrl } = await import("@/lib/s3-utils");
+    const downloadUrl = await generateDownloadPresignedUrl(targetKey);
+
+    return NextResponse.json({ success: true, downloadUrl });
+  } catch (error) {
+    console.error("❌ GET /api/upload/presign error:", error);
+    return NextResponse.json({ downloadUrl: req.url });
+  }
+}

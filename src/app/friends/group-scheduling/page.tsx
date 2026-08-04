@@ -138,7 +138,7 @@ export default function GroupSchedulingPage() {
           uids.forEach(uid => {
             let combined = BigInt(0);
             dates.forEach((dateStr: string, idx: number) => {
-              const maskStr = availability[uid][dateStr] || "0";
+              const maskStr = (availability[uid] && availability[uid][dateStr]) || "0";
               const mask = BigInt(maskStr);
               combined |= (mask << BigInt(idx * 48));
             });
@@ -200,7 +200,7 @@ export default function GroupSchedulingPage() {
         }
 
         const weekdays = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
-        const sortedOptions = proposed.slice(0, 3).map(opt => {
+        const sortedOptions = proposed.slice(0, 30).map(opt => {
           const d = new Date(opt.startTime);
           const dayLabel = weekdays[d.getDay()];
           return {

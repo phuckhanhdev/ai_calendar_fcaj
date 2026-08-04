@@ -73,16 +73,18 @@ export async function POST(req) {
     const todayStr = new Date().toISOString().substring(0, 10);
     const systemPrompt = `
 Bạn là Trợ lý Lập lịch Khoa học Thông minh.
-Nhiệm vụ của bạn là bóc tách câu lệnh đa mục tiêu của người dùng thành các tác vụ khoa học.
+Nhiệm vụ của bạn là bóc tách câu lệnh lập lịch của người dùng.
 Hôm nay là: ngày ${todayStr}.
 
 Hãy phân tích câu sau: "${text}"
 Và trả về CHỈ duy nhất 1 chuỗi JSON theo định dạng sau (không chứa văn bản giải thích ngoài JSON):
 {
+  "start_date": "YYYY-MM-DD (ngày bắt đầu, nếu người dùng nêu rõ, hoặc null nếu từ hôm nay)",
+  "end_date": "YYYY-MM-DD (ngày kết thúc, nếu người dùng nói 'tới 10/10' hay 'đến tháng 10', hoặc null)",
   "tasks": [
     {
       "task_id": "task_1",
-      "title": "Tên chi tiết hoạt động (ví dụ: 'Tập Gym')",
+      "title": "Tên chi tiết hoạt động (ví dụ: 'Đi xem phim', 'Họp nhóm')",
       "category": "study | fitness | date | general",
       "duration_minutes": 60,
       "is_hard_constraint": false,
@@ -177,8 +179,58 @@ Và trả về CHỈ duy nhất 1 chuỗi JSON theo định dạng sau (không c
     const masterScheduler = new MasterScientificScheduler();
     const scientificSchedule = masterScheduler.schedule(parsedTasks);
 
+    // --- BƯỚC 3: TÍNH TOÁN DỮ LIỆU LỊCH TRỐNG BITMASK CHO HẸN LỊCH NHÓM ---
+    let parsedJsonObj = {};
+    try {
+      const cleanJsonStr = aiOutput.replace(/```json|```/g, "").trim();
+      parsedJsonObj = JSON.parse(cleanJsonStr);
+    } catch (e) { }
+
+    const firstTask = parsedTasks[0] || {};
+    const parsedTitle = firstTask.title || text;
+    const parsedDuration = firstTask.duration_minutes || 120;
+
+    // Lấy khoảng ngày quét (Start Date -> End Date)
+    const dates = [];
+    const startDateObj = parsedJsonObj.start_date ? new Date(parsedJsonObj.start_date) : new Date();
+    const endDateObj = parsedJsonObj.end_date ? new Date(parsedJsonObj.end_date) : null;
+
+    if (endDateObj && !isNaN(endDateObj.getTime()) && endDateObj >= startDateObj) {
+      const current = new Date(startDateObj);
+      let dayCount = 0;
+      while (current <= endDateObj && dayCount < 90) {
+        dates.push(current.toISOString().substring(0, 10));
+        current.setDate(current.getDate() + 1);
+        dayCount++;
+      }
+    } else {
+      for (let i = 0; i < 14; i++) {
+        const d = new Date(startDateObj);
+        d.setDate(startDateObj.getDate() + i);
+        dates.push(d.toISOString().substring(0, 10));
+      }
+    }
+
+    // Quét bitmask lịch bận cho từng thành viên tham gia
+    const availability = {};
+    for (const uid of allParticipants) {
+      availability[uid] = {};
+      for (const dStr of dates) {
+        try {
+          const bitmask = await getUserDailyBitmask(uid, dStr);
+          availability[uid][dStr] = bitmask.toString();
+        } catch (e) {
+          availability[uid][dStr] = "0";
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
+      title: parsedTitle,
+      duration_minutes: parsedDuration,
+      dates,
+      availability,
       target_date: todayStr,
       total_tasks_parsed: parsedTasks.length,
       scientific_schedule: scientificSchedule,

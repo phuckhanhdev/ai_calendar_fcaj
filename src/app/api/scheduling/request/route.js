@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { verifyToken } from "@/config/auth";
 import connectToDatabase from "@/database/connection";
 import crypto from "crypto";
+import { createNotification } from "@/models/notificationModel";
+import { getUserProfile } from "@/services/userService";
 
 export const dynamic = "force-dynamic";
 
@@ -63,13 +65,31 @@ export async function POST(req) {
       await runQuery(sqlOption, [optionId, meetingRequestId, formattedStart, formattedEnd]);
     }
 
-    // 3. Insert into MEETING_PARTICIPANT for all invited users
+    // 3. Insert into MEETING_PARTICIPANT for all invited users & send notifications
+    const hostProfile = await getUserProfile(hostId);
+    const hostName = hostProfile
+      ? `${hostProfile.FName || hostProfile.fname || ""} ${hostProfile.LName || hostProfile.lname || ""}`.trim() || hostProfile.Email
+      : "Một người bạn";
+
     for (const pId of users_invited) {
       const sqlParticipant = `
         INSERT INTO \`MEETING_PARTICIPANT\` (Meeting_Request_ID, User_ID, Status)
         VALUES (?, ?, 'INVITED')
       `;
       await runQuery(sqlParticipant, [meetingRequestId, pId]);
+
+      // Notify participant
+      try {
+        await createNotification(
+          pId,
+          "MEETING_INVITATION",
+          "Mời bình chọn lịch hẹn nhóm",
+          `${hostName} đã mời bạn tham gia bình chọn cuộc hẹn "${title}".`,
+          `/friends/group-scheduling/vote/${meetingRequestId}`
+        );
+      } catch (notifErr) {
+        console.warn(`Could not send meeting invitation notification to ${pId}:`, notifErr.message);
+      }
     }
 
     return NextResponse.json({

@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from "react";
 import { Check, X, Bell, Users, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 import "./notification-dropdown.css";
 
 interface RequestItem {
@@ -85,9 +86,76 @@ export default function NotificationDropdown({
     if (!notif.isRead) {
       await onMarkRead(notif.id);
     }
-    if (notif.link) {
+    if (notif.link && typeof notif.link === "string" && !notif.link.startsWith("{")) {
       onClose();
       router.push(notif.link);
+    }
+  };
+
+  const handleAcceptEventInvite = async (notif: HistoricalNotification, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      let payload: any = {};
+      if (notif.link) {
+        try {
+          payload = typeof notif.link === "string" ? JSON.parse(notif.link) : notif.link;
+        } catch (err) {
+          console.warn("Raw notification link parsing failed, attempting regex repair:", err);
+          if (typeof notif.link === "string" && notif.link.includes('"title":')) {
+            try {
+              const titleMatch = notif.link.match(/"title":"([^"]+)"/);
+              const startMatch = notif.link.match(/"start":"([^"]+)"/);
+              const locationMatch = notif.link.match(/"location":"([^"]*)"/);
+              const colorMatch = notif.link.match(/"color":"([^"]*)"/);
+              if (titleMatch) {
+                payload = {
+                  action: "accept_event_invite",
+                  eventData: {
+                    title: titleMatch[1],
+                    start: startMatch ? startMatch[1] : new Date().toISOString(),
+                    location: locationMatch ? locationMatch[1] : "",
+                    color: colorMatch ? colorMatch[1] : "#6366f1"
+                  }
+                };
+              }
+            } catch (rErr) {
+              console.error("Regex repair error:", rErr);
+            }
+          }
+        }
+      }
+
+      if (!payload.eventData) {
+        toast.warning("Thông tin sự kiện trong lời mời không tìm thấy.");
+        return;
+      }
+
+      toast.info("Đang xử lý thêm sự kiện vào Lịch cá nhân...");
+
+      const res = await fetch("/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "accept_event_invite",
+          eventData: payload.eventData,
+          hostId: payload.hostId,
+          notificationId: notif.id
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`Đã đồng ý & tự động thêm sự kiện vào Lịch cá nhân!`);
+        onClose();
+        if (typeof window !== "undefined") {
+          window.location.href = "/calendar";
+        }
+      } else {
+        toast.error(data.error || "Không thể chấp nhận lời mời.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi chấp nhận lời mời.");
     }
   };
 
@@ -173,26 +241,43 @@ export default function NotificationDropdown({
             ))}
 
             {/* 3. Historical Notifications */}
-            {historicalNotifications.map((notif) => (
-              <div
-                key={notif.id}
-                onClick={() => handleNotifClick(notif)}
-                className={`notif-dropdown-item ${!notif.isRead ? "unread" : ""}`}
-              >
-                <span className={`notif-dropdown-icon-wrapper ${!notif.isRead ? "unread" : "read"}`}>
-                  <Bell size={14} />
-                </span>
-                <div className="notif-dropdown-item-content">
-                  <div className="notif-dropdown-item-title-row">
-                    <p className="notif-dropdown-item-title">{notif.title}</p>
-                    {!notif.isRead && (
-                      <span className="notif-dropdown-unread-dot"></span>
-                    )}
+            {historicalNotifications.map((notif) => {
+              const isEventInvite = notif.type === "EVENT_INVITATION" || (notif.link && notif.link.includes("accept_event_invite"));
+              return (
+                <div
+                  key={notif.id}
+                  onClick={() => handleNotifClick(notif)}
+                  className={`notif-dropdown-item flex-col items-start gap-1 ${!notif.isRead ? "unread" : ""}`}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <span className={`notif-dropdown-icon-wrapper ${!notif.isRead ? "unread" : "read"}`}>
+                      <Bell size={14} />
+                    </span>
+                    <div className="notif-dropdown-item-content flex-1">
+                      <div className="notif-dropdown-item-title-row">
+                        <p className="notif-dropdown-item-title">{notif.title}</p>
+                        {!notif.isRead && (
+                          <span className="notif-dropdown-unread-dot"></span>
+                        )}
+                      </div>
+                      <p className="notif-dropdown-item-desc">{notif.content}</p>
+                    </div>
                   </div>
-                  <p className="notif-dropdown-item-desc">{notif.content}</p>
+
+                  {isEventInvite && !notif.isRead && (
+                    <div className="mt-1 pl-7 w-full flex items-center gap-2">
+                      <button
+                        onClick={(e) => handleAcceptEventInvite(notif, e)}
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] rounded-lg shadow transition-all flex items-center gap-1"
+                      >
+                        <Check size={12} />
+                        Đồng ý & Thêm vào Lịch
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         ) : (
           <div className="notif-dropdown-empty">

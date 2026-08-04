@@ -85,20 +85,32 @@ Hãy trả về CHỈ duy nhất 1 chuỗi JSON theo định dạng:
       }
     }
 
-    // Fallback Gemini
-    if (!aiParsed && geminiKey && geminiKey !== "" && geminiKey !== "YOUR_GEMINI_API_KEY") {
-      try {
-        const genAI = new GoogleGenerativeAI(geminiKey);
-        const model = genAI.getGenerativeModel({
-          model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
-          systemInstruction: systemPrompt
-        });
-        const result = await model.generateContent("Bóc tách câu trên.");
-        const textOut = result.response.text();
-        const jsonMatch = textOut.match(/\{[\s\S]*\}/);
-        if (jsonMatch) aiParsed = JSON.parse(jsonMatch[0]);
-      } catch (err) {
-        console.error("Gemini error parsing movie request:", err);
+    // Fallback Gemini (Multi-Key)
+    const geminiKeys = [
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_BACKUP,
+      process.env.GEMINI_API_KEY_2
+    ].filter(k => k && k !== "" && k !== "YOUR_GEMINI_API_KEY");
+
+    if (!aiParsed && geminiKeys.length > 0) {
+      for (let i = 0; i < geminiKeys.length; i++) {
+        try {
+          console.log(`🔄 [Movie CGV] Calling Gemini Key ${i + 1}...`);
+          const genAI = new GoogleGenerativeAI(geminiKeys[i]);
+          const model = genAI.getGenerativeModel({
+            model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+            systemInstruction: systemPrompt
+          });
+          const result = await model.generateContent("Bóc tách câu trên.");
+          const textOut = result.response.text();
+          const jsonMatch = textOut.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            aiParsed = JSON.parse(jsonMatch[0]);
+            break;
+          }
+        } catch (err) {
+          console.warn(`⚠️ Gemini Key ${i + 1} movie error:`, err.message);
+        }
       }
     }
 

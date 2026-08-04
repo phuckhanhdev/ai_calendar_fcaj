@@ -38,12 +38,14 @@ export async function POST(req) {
         // Notify the user who sent the friend request
         try {
           const profile = await getUserProfile(userId);
-          const name = profile ? `${profile.fname} ${profile.lname}` : "Bạn bè";
+          const fullName = profile 
+            ? `${profile.FName || profile.fname || ""} ${profile.LName || profile.lname || ""}`.trim() || profile.Email || "Bạn bè"
+            : "Bạn bè";
           await createNotification(
             friendId,
             "FRIEND_ACCEPTED",
             "Đã chấp nhận lời mời kết bạn",
-            `${name} đã chấp nhận lời mời kết bạn của bạn.`,
+            `${fullName} đã chấp nhận lời mời kết bạn của bạn.`,
             "/friends"
           );
         } catch (notifErr) {

@@ -85,7 +85,7 @@ export async function POST(req) {
     try {
       const sqlHostInfo = `
         SELECT mr.Host_ID AS hostId, mr.Title AS title,
-               CONCAT(u.FName, ' ', u.LName) AS guestName
+               COALESCE(NULLIF(TRIM(CONCAT(COALESCE(u.FName, ''), ' ', COALESCE(u.LName, ''))), ''), u.Email) AS guestName
         FROM \`MEETING_REQUEST\` mr
         JOIN \`USER\` u ON u.User_ID = ?
         WHERE mr.Meeting_Request_ID = ?

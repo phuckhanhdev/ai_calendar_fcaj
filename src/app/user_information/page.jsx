@@ -25,6 +25,7 @@ export default function UserInformationPage() {
     phone: "",
     email: "",
     dob: "",
+    birthTime: "",
     gender: "Male",
     latitude: 10.7769,
     longitude: 106.7009,
@@ -41,6 +42,7 @@ export default function UserInformationPage() {
           phone: user.Phone_Number || "",
           email: user.Email || "",
           dob: user.Date_of_birth ? user.Date_of_birth.substring(0, 10) : "",
+          birthTime: user.Birth_Time ? user.Birth_Time.substring(0, 5) : "",
           gender: user.Gender || "Male",
           latitude: user.Latitude ? parseFloat(user.Latitude) : 10.7769,
           longitude: user.Longitude ? parseFloat(user.Longitude) : 106.7009,
@@ -259,6 +261,7 @@ export default function UserInformationPage() {
           FName: formData.firstName,
           LName: formData.lastName,
           Date_of_birth: formData.dob || null,
+          Birth_Time: formData.birthTime || null,
           Gender: formData.gender,
           Latitude: formData.latitude,
           Longitude: formData.longitude,
@@ -453,6 +456,26 @@ export default function UserInformationPage() {
                     <option value="Female">Nữ</option>
                     <option value="Other">Khác</option>
                   </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Ngày sinh</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={formData.dob}
+                    onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Giờ sinh (Chính xác đến phút)</label>
+                  <input
+                    type="time"
+                    className="form-input"
+                    value={formData.birthTime}
+                    onChange={(e) => setFormData({ ...formData, birthTime: e.target.value })}
+                  />
                 </div>
 
                 <div className="form-group user-form-full">
